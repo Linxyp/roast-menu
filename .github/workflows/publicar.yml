@@ -1,0 +1,51 @@
+name: Publicar la carta en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Dirección pública de la carta
+        # La URL real del sitio (o el dominio propio, si se configura en Settings → Pages → Custom domain).
+        # Con ella se generan el QR y la vista previa al compartir el enlace.
+        run: |
+          echo "NEXT_PUBLIC_SITE_URL=${{ steps.pages.outputs.base_url }}/" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_BASE_PATH=${{ steps.pages.outputs.base_path }}" >> "$GITHUB_ENV"
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: touch out/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  publicar:
+    needs: compilar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - id: despliegue
+        uses: actions/deploy-pages@v4

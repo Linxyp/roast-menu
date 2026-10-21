@@ -1,0 +1,39 @@
+{
+  "_nota": "Zonas de cada foto dentro de los afiches originales (carpeta fuentes/). Cajas en píxeles [izquierda, arriba, derecha, abajo] sobre la imagen de 1024x1536; \"tapar\" pinta con el fondo restos de letras del afiche. Para usar una foto propia en lugar del recorte, cambie \"afiche\" + \"caja\" por \"archivo\": \"fuentes/fotos/mi-foto.jpg\" y vuelva a correr: npm run imagenes",
+  "afiches": {
+    "hamburguesas": "fuentes/afiche-hamburguesas.jpg",
+    "salchipapas": "fuentes/afiche-salchipapas.jpg"
+  },
+  "fotos": {
+    "hamburguesa":            { "afiche": "hamburguesas", "caja": [536, 8, 1024, 476] },
+    "combo":                  { "afiche": "hamburguesas", "caja": [340, 1150, 816, 1478], "tapar": [[338, 1158, 358, 1230]] },
+    "salchipapas":            { "afiche": "salchipapas",  "caja": [540, 15, 1024, 524] },
+    "coca-cola":              { "afiche": "salchipapas",  "caja": [316, 1196, 474, 1500], "sin_fondo": true },
+    "cerveza-3-cordilleras":  { "afiche": "salchipapas",  "caja": [662, 1184, 814, 1502], "sin_fondo": true },
+
+    "carne-res":              { "afiche": "hamburguesas", "caja": [50, 591, 253, 703] },
+    "carne-pollo":            { "afiche": "hamburguesas", "caja": [308, 591, 513, 703] },
+
+    "hamb-chicharron":        { "afiche": "hamburguesas", "caja": [40, 830, 208, 933] },
+    "hamb-platano-maduro":    { "afiche": "hamburguesas", "caja": [229, 830, 406, 933] },
+    "hamb-pina":              { "afiche": "hamburguesas", "caja": [426, 830, 592, 933] },
+    "hamb-tocineta":          { "afiche": "hamburguesas", "caja": [613, 830, 794, 933] },
+    "hamb-queso":             { "afiche": "hamburguesas", "caja": [815, 830, 981, 933] },
+    "hamb-mazorca":           { "afiche": "hamburguesas", "caja": [40, 985, 208, 1085] },
+    "hamb-papitas-fosforito": { "afiche": "hamburguesas", "caja": [229, 985, 406, 1085] },
+    "hamb-guacamole":         { "afiche": "hamburguesas", "caja": [426, 985, 592, 1085] },
+    "hamb-champinones":       { "afiche": "hamburguesas", "caja": [613, 985, 794, 1085] },
+    "hamb-huevo":             { "afiche": "hamburguesas", "caja": [815, 985, 981, 1085] },
+
+    "salchi-carne":           { "afiche": "salchipapas",  "caja": [47, 874, 264, 981] },
+    "salchi-pollo":           { "afiche": "salchipapas",  "caja": [285, 874, 502, 981] },
+    "salchi-platano":         { "afiche": "salchipapas",  "caja": [522, 874, 742, 981] },
+    "salchi-chicharron":      { "afiche": "salchipapas",  "caja": [760, 874, 977, 981] },
+    "salchi-queso":           { "afiche": "salchipapas",  "caja": [47, 1032, 264, 1136] },
+    "salchi-guacamole":       { "afiche": "salchipapas",  "caja": [285, 1032, 502, 1136] },
+    "salchi-maiz-tierno":     { "afiche": "salchipapas",  "caja": [522, 1032, 742, 1136] },
+    "salchi-tocineta":        { "afiche": "salchipapas",  "caja": [760, 1032, 977, 1136] }
+  },
+  "logo": { "afiche": "hamburguesas", "caja": [58, 22, 516, 272], "negro": 0.2, "blanco": 0.62 },
+  "marca": { "afiche": "hamburguesas", "caja": [174, 96, 298, 218], "negro": 0.2, "blanco": 0.62 }
+}
