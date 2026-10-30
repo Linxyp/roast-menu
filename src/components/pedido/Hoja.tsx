@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { reportarDiagnostico } from "@/lib/diagnostico";
 
 interface Props {
   abierta: boolean;
@@ -12,6 +13,12 @@ interface Props {
   ancha?: boolean;
 }
 
+/** ¿El toque cayó fuera de la caja de la hoja (en el fondo oscuro)? */
+function fueraDeLaHoja(evento: { clientX: number; clientY: number; currentTarget: HTMLDialogElement }) {
+  const caja = evento.currentTarget.getBoundingClientRect();
+  return evento.clientX < caja.left || evento.clientX > caja.right || evento.clientY < caja.top || evento.clientY > caja.bottom;
+}
+
 /**
  * Hoja modal sobre <dialog> nativo: atrapa el foco, cierra con Esc y deja el resto de la página
  * inerte sin librerías. En el celular sube desde abajo; en pantallas grandes queda centrada.
@@ -20,6 +27,7 @@ export function Hoja({ abierta, onCerrar, etiquetaId, children, ancha = false }:
   const dialogo = useRef<HTMLDialogElement>(null);
   const abiertaRef = useRef(abierta);
   const onCerrarRef = useRef(onCerrar);
+  const presionFuera = useRef(false);
 
   useEffect(() => {
     abiertaRef.current = abierta;
@@ -29,7 +37,20 @@ export function Hoja({ abierta, onCerrar, etiquetaId, children, ancha = false }:
   useEffect(() => {
     const elemento = dialogo.current;
     if (!elemento) return;
-    if (abierta && !elemento.open) elemento.showModal();
+    if (abierta && !elemento.open) {
+      try {
+        elemento.showModal();
+      } catch {
+        elemento.setAttribute("open", ""); // si el navegador no la abre como modal, que al menos se vea
+      }
+      // Respaldo: si un navegador la dibuja aplastada (le pasaba a Safari en iPhone), se le da alto fijo
+      // para que se vea igual, y se avisa al servidor.
+      window.setTimeout(() => {
+        if (!elemento.open || elemento.getBoundingClientRect().height >= 40) return;
+        elemento.style.height = "92dvh";
+        reportarDiagnostico("hoja-aplastada", `pantalla ${window.innerWidth}x${window.innerHeight}`);
+      }, 400);
+    }
     if (!abierta && elemento.open) elemento.close();
   }, [abierta]);
 
@@ -59,9 +80,14 @@ export function Hoja({ abierta, onCerrar, etiquetaId, children, ancha = false }:
       ref={dialogo}
       className={`hoja ${ancha ? "hoja-ancha" : ""}`}
       aria-labelledby={etiquetaId}
+      onPointerDown={(evento) => {
+        presionFuera.current = evento.target === evento.currentTarget && fueraDeLaHoja(evento);
+      }}
       onClick={(evento) => {
-        // Un clic en el fondo oscuro llega al <dialog> mismo; dentro de la hoja llega a sus hijos.
-        if (evento.target === evento.currentTarget) onCerrar();
+        // El fondo oscuro y la barra de desplazamiento de la hoja llegan ambos al <dialog>: solo cierra
+        // un toque que empezó y terminó fuera de la hoja.
+        if (presionFuera.current && evento.target === evento.currentTarget && fueraDeLaHoja(evento)) onCerrar();
+        presionFuera.current = false;
       }}
     >
       {abierta ? children : null}

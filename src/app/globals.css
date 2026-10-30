@@ -730,50 +730,49 @@ body {
     color: var(--texto-tenue);
   }
 
-  /* ---------- Hojas modales (producto, carrito, mis pedidos) ---------- */
+  /* ---------- Hojas modales (producto, carrito, mis pedidos) ----------
+     Una sola caja que se desplaza (el <dialog>), con la cabecera y el pie pegados (sticky). Sin flex
+     anidado a propósito: Safari en iPhone no calcula la altura de un flex con un hijo desplazable dentro
+     de un <dialog> y la hoja salía como una franja de 2 px, invisible. */
   .hoja {
     /* Celular: sube desde abajo y mide lo que su contenido (hasta el 92 % de la pantalla). */
     position: fixed;
     inset: auto 0 0;
     width: 100%;
     max-width: 100%;
-    height: fit-content;
+    height: auto;
     max-height: 92vh;
     max-height: 92dvh;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border: 0;
     border-radius: 1.5rem 1.5rem 0 0;
-    background: var(--color-carbon-900);
+    /* carbón 900 con un pelo de transparencia: Safari 26 en iPhone a veces no pinta completo un
+       elemento fijo de fondo 100 % opaco. */
+    background: rgb(19 17 13 / 0.995);
     color: var(--color-crema);
     box-shadow:
       0 -20px 60px -20px rgb(0 0 0 / 0.85),
       0 0 0 1px var(--linea-oro-suave);
-    transition:
-      transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1),
-      opacity 0.2s ease,
-      display 0.26s allow-discrete,
-      overlay 0.26s allow-discrete;
   }
   .hoja[open] {
-    display: flex;
-    flex-direction: column;
-  }
-  @starting-style {
-    .hoja[open] {
-      transform: translateY(2.5rem);
-      opacity: 0;
-    }
+    animation: hoja-sube 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .hoja::backdrop {
     background: rgb(0 0 0 / 0.72);
+  }
+  .hoja[open]::backdrop {
+    animation: hoja-fondo 0.2s ease-out;
   }
   @media (min-width: 640px) {
     .hoja {
       inset: 0;
       width: calc(100% - 3rem);
       max-width: 36rem;
+      height: fit-content;
       max-height: min(90vh, 56rem);
       max-height: min(90dvh, 56rem);
       margin: auto;
@@ -783,20 +782,10 @@ body {
       max-width: 52rem;
     }
   }
-  .hoja-marco {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .hoja-cuerpo {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
   .hoja-pie {
-    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
     padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
     border-top: 1px solid var(--linea-oro-suave);
     background: rgb(11 10 8 / 0.97);
@@ -1116,12 +1105,16 @@ body {
 
   /* ---------- Carrito ---------- */
   .pedido-cabecera {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
     padding: 1.1rem 1rem 0.9rem;
     border-bottom: 1px solid var(--linea-oro-suave);
+    background: var(--color-carbon-900);
   }
   @media (min-width: 640px) {
     .pedido-cabecera {
@@ -1619,6 +1612,17 @@ body {
 @keyframes latido {
   50% {
     opacity: 0.55;
+  }
+}
+
+@keyframes hoja-sube {
+  from {
+    transform: translateY(2.5rem);
+  }
+}
+@keyframes hoja-fondo {
+  from {
+    opacity: 0;
   }
 }
 

@@ -49,7 +49,7 @@ export function MisPedidos({ mesa, pedidos, onCerrar, onPedirMas }: Props) {
   }, [mesa.codigo, pedidos]);
 
   return (
-    <div className="hoja-marco">
+    <div>
       <header className="pedido-cabecera">
         <div>
           <h2 id="titulo-mis-pedidos" className="pedido-titulo">
@@ -61,7 +61,7 @@ export function MisPedidos({ mesa, pedidos, onCerrar, onPedirMas }: Props) {
           <IconoCerrar className="size-5" />
         </button>
       </header>
-      <div className="hoja-cuerpo space-y-4 px-4 py-5 sm:px-6">
+      <div className="space-y-4 px-4 py-5 sm:px-6">
         {pedidos.map((enviado) => {
           const pedido = estados[enviado.id];
           const indice = pedido ? PASOS.findIndex((p) => p.estado === pedido.estado) : 0;

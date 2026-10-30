@@ -47,7 +47,7 @@ export function ContenidoCarrito(props: Props) {
   }
 
   return (
-    <div className="hoja-marco">
+    <div>
       <header className="pedido-cabecera">
         <div>
           <h2 id="titulo-carrito" ref={titulo} tabIndex={-1} className="pedido-titulo">
@@ -60,7 +60,7 @@ export function ContenidoCarrito(props: Props) {
         </button>
       </header>
 
-      <div className="hoja-cuerpo px-4 pb-6 sm:px-6">
+      <div className="px-4 pb-6 sm:px-6">
         {vacio ? (
           <div className="pedido-vacio">
             <IconoBolsa className="size-10 text-oro-400" />

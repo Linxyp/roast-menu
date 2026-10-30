@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import type { CartaDTO, CategoriaDTO, MesaDTO, ProductoDTO } from "@/lib/carta";
 import { IconoBebida, IconoHamburguesa, IconoMas, IconoPapas } from "../Iconos";
 import { BotonProducto } from "./BotonProducto";
+import { Diagnostico } from "./Diagnostico";
 import { Foto } from "./Foto";
 import { NavCategorias } from "./NavCategorias";
 import { NombreProducto } from "./NombreProducto";
@@ -34,6 +35,7 @@ export function PaginaCarta({ carta, mesa }: { carta: CartaDTO; mesa: MesaDTO | 
   const conPedidos = mesa !== null && carta.negocio.recibiendoPedidos;
   return (
     <>
+      <Diagnostico />
       <ToquesTempranos />
       <a href="#menu" className="saltar">
         Saltar al menú

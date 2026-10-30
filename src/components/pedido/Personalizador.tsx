@@ -74,8 +74,8 @@ export function Personalizador({ producto, modo, inicial, tituloId, onConfirmar,
     : "";
 
   return (
-    <form className="hoja-marco" onSubmit={confirmar} noValidate>
-      <div className="hoja-cuerpo">
+    <form onSubmit={confirmar} noValidate>
+      <div>
         {/* Foto de fondo con el título encima; un recorte sin fondo (bebidas) va completo con el título
             debajo, y sin foto la cabecera es solo el título. */}
         <header className={`armar-cabecera ${!producto.imagen ? "armar-cabecera-sin-foto" : producto.imagen.transparente ? "armar-cabecera-recorte" : ""}`}>

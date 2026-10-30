@@ -11,6 +11,9 @@ const GUION = `(function () {
     if (!boton) return;
     window.__roastPendiente = boton.getAttribute("data-producto");
     boton.setAttribute("aria-busy", "true");
+    setTimeout(function () {
+      if (!window.__roastListo && window.__roastReportar) window.__roastReportar("sin-cargar", "un toque lleva 8 s sin respuesta");
+    }, 8000);
   }, true);
 })();`;
 
