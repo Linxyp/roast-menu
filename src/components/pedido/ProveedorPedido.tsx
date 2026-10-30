@@ -106,6 +106,16 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
     if (destino?.isConnected) requestAnimationFrame(() => destino.focus());
   }, []);
 
+  // Ya cargó: si alguien tocó un producto antes (ver ToquesTempranos), se abre ahora.
+  useEffect(() => {
+    const ventana = window as typeof window & { __roastListo?: boolean; __roastPendiente?: string };
+    ventana.__roastListo = true;
+    const pendiente = ventana.__roastPendiente;
+    delete ventana.__roastPendiente;
+    document.querySelectorAll("[data-producto][aria-busy]").forEach((boton) => boton.removeAttribute("aria-busy"));
+    if (pendiente) requestAnimationFrame(() => abrir({ tipo: "producto", productoId: pendiente }));
+  }, [abrir]);
+
   const avisar = useCallback((texto: string) => {
     // Espera a que la hoja se cierre: lo que queda detrás de un <dialog> abierto no se anuncia.
     window.setTimeout(() => setAviso({ texto, id: Date.now() }), 80);

@@ -43,6 +43,7 @@ html {
 }
 
 body {
+  min-height: 100vh;
   min-height: 100dvh;
   color: var(--color-crema);
   background-color: var(--color-carbon-950);
@@ -737,6 +738,7 @@ body {
     width: 100%;
     max-width: 100%;
     height: fit-content;
+    max-height: 92vh;
     max-height: 92dvh;
     margin: 0;
     padding: 0;
@@ -772,6 +774,7 @@ body {
       inset: 0;
       width: calc(100% - 3rem);
       max-width: 36rem;
+      max-height: min(90vh, 56rem);
       max-height: min(90dvh, 56rem);
       margin: auto;
       border-radius: 1.5rem;
@@ -1605,6 +1608,17 @@ body {
   }
   to {
     transform: none;
+  }
+}
+
+/* Botón tocado mientras la página aún cargaba: late hasta que se abre su hoja (ver ToquesTempranos). */
+[data-producto][aria-busy="true"] {
+  animation: latido 0.9s ease-in-out infinite;
+  cursor: progress;
+}
+@keyframes latido {
+  50% {
+    opacity: 0.55;
   }
 }
 

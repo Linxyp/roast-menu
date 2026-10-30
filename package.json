@@ -65,5 +65,13 @@
     "esbuild@0.28.2": true,
     "prisma@7.10.0": true,
     "unrs-resolver@1.12.2": true
-  }
+  },
+  "browserslist": [
+    "chrome >= 87",
+    "edge >= 87",
+    "firefox >= 78",
+    "safari >= 15.4",
+    "ios_saf >= 15.4",
+    "samsung >= 14"
+  ]
 }

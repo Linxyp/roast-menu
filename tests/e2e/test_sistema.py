@@ -220,6 +220,19 @@ def accesibilidad(pagina: Page, donde: str) -> None:
     assert not graves, f"Accesibilidad en {donde}: {json.dumps(graves, ensure_ascii=False)}"
 
 
+def revisar_compatibilidad() -> None:
+    """El JavaScript compilado no usa sintaxis que los celulares viejos no entienden (ver browserslist).
+
+    Un solo bloque así deja la carta sin botones en esos navegadores: se ve, pero nada responde.
+    """
+    prohibido = {"static{": "bloques static de clase (Safari < 16.4)", "(?<=": "lookbehind (Safari < 16.4)", "(?<!": "lookbehind (Safari < 16.4)"}
+    for archivo in (RAIZ / ".next" / "static" / "chunks").glob("**/*.js"):
+        codigo = archivo.read_text(encoding="utf-8", errors="ignore")
+        for patron, que in prohibido.items():
+            assert patron not in codigo, f"{archivo.name} usa {que}: revisa browserslist en package.json"
+    print("• El código compilado corre en celulares desde iOS 15.4 y Chrome 87 ✔", flush=True)
+
+
 def sin_desborde(pagina: Page, donde: str) -> None:
     ancho = pagina.evaluate("() => document.documentElement.scrollWidth")
     vista = pagina.viewport_size["width"]
@@ -298,6 +311,28 @@ def probar(navegador: Browser, mesas: dict[str, str]) -> None:
         expect(cp.locator(".barra-pedido-boton")).to_have_count(0)
         sin_desborde(cp, "carta general")
         accesibilidad(cp, "carta general")
+        for producto in ["Hamburguesa", "Perro", "Mazorcada familiar"]:
+            cp.get_by_role("button", name=f"Ver opciones de {producto}").tap()
+            hoja = cp.locator("dialog[open]")
+            expect(hoja.locator("h2")).to_have_text(re.compile(f"^{producto}$", re.I))
+            expect(hoja).to_contain_text("Para pedir, escanea el código QR de tu mesa.")
+            hoja.get_by_role("button", name="Cerrar").tap()
+            expect(cp.locator("dialog[open]")).to_have_count(0)
+
+    with paso("Con datos móviles lentos, un toque mientras la carta carga no se pierde"):
+        lento = navegador.new_context(**CELULAR)
+        lp = vigilar(lento.new_page(), "cliente-lento")
+        cdp = lento.new_cdp_session(lp)
+        cdp.send("Network.enable")
+        cdp.send("Network.emulateNetworkConditions", {"offline": False, "latency": 400, "downloadThroughput": 100_000, "uploadThroughput": 50_000})
+        lp.goto(f"{BASE}/m/{mesas['2']}", wait_until="commit")
+        boton = lp.get_by_role("button", name="Armar y agregar Hamburguesa")
+        boton.wait_for(state="visible", timeout=30_000)
+        boton.tap(no_wait_after=True)  # antes de que cargue el JavaScript
+        expect(boton).to_have_attribute("aria-busy", "true")  # el botón avisa que lo tocaron
+        expect(lp.locator("dialog[open] h2")).to_have_text(re.compile("^Hamburguesa$", re.I), timeout=40_000)
+        expect(boton).not_to_have_attribute("aria-busy", "true")
+        lento.close()
 
     with paso("Mesa 3 arma su pedido: hamburguesa de pollo con 3 toppings, 2 perros y gaseosa"):
         cp.goto(f"{BASE}/m/{mesas['3']}")
@@ -504,6 +539,7 @@ def main() -> None:
     elif not opciones.sin_compilar:
         print("Compilando (next build)…", flush=True)
         subprocess.run([NPX, "next", "build"], cwd=RAIZ, env=env, check=True)
+        revisar_compatibilidad()
     detener = iniciar_servidor(env, opciones.docker)
     inicio = time.time()
     try:

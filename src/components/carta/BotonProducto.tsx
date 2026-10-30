@@ -9,7 +9,7 @@ export function BotonProducto({ productoId, nombre, agotado, armable }: { produc
   if (!conMesa) {
     if (!armable) return null;
     return (
-      <button type="button" className="boton-secundario w-full" aria-haspopup="dialog" onClick={() => abrirProducto(productoId)}>
+      <button type="button" className="boton-secundario w-full" aria-haspopup="dialog" data-producto={productoId} onClick={() => abrirProducto(productoId)}>
         Ver opciones<span className="sr-only"> de {nombre}</span>
       </button>
     );
@@ -19,6 +19,7 @@ export function BotonProducto({ productoId, nombre, agotado, armable }: { produc
       type="button"
       className={agotado ? "boton-agotado w-full" : armable ? "boton-primario w-full" : "boton-secundario w-full"}
       aria-haspopup="dialog"
+      data-producto={productoId}
       onClick={() => abrirProducto(productoId)}
     >
       {agotado ? (

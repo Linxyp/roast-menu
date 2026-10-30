@@ -7,6 +7,7 @@ import { NavCategorias } from "./NavCategorias";
 import { NombreProducto } from "./NombreProducto";
 import { Precio } from "./Precio";
 import { TablaPrecios } from "./TablaPrecios";
+import { ToquesTempranos } from "./ToquesTempranos";
 
 /** Ancla legible de cada sección: «hamburguesas», «perros»… */
 export function anclas(categorias: CategoriaDTO[]): Map<string, string> {
@@ -33,6 +34,7 @@ export function PaginaCarta({ carta, mesa }: { carta: CartaDTO; mesa: MesaDTO | 
   const conPedidos = mesa !== null && carta.negocio.recibiendoPedidos;
   return (
     <>
+      <ToquesTempranos />
       <a href="#menu" className="saltar">
         Saltar al menú
       </a>
