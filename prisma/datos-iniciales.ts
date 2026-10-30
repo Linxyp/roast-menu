@@ -206,4 +206,4 @@ export const CATEGORIAS: CategoriaInicial[] = [
   },
 ];
 
-export const MESAS_INICIALES = 10;
+export const MESAS_INICIALES = 8;

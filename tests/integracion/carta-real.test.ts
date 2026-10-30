@@ -39,7 +39,7 @@ function linea(nombre: string, toppings = 0) {
 }
 
 describe("carta inicial (npm run db:seed)", () => {
-  test("carga los productos en orden, las 10 mesas y el administrador", async () => {
+  test("carga los productos en orden, las 8 mesas y el administrador", async () => {
     expect([...productos.keys()]).toEqual([
       "Hamburguesa",
       "Combo con 2 toppings",
@@ -51,7 +51,7 @@ describe("carta inicial (npm run db:seed)", () => {
       "Productos Coca-Cola",
       "Cerveza negra 3 Cordilleras",
     ]);
-    expect(await db.mesa.count({ where: { activa: true } })).toBe(10);
+    expect(await db.mesa.count({ where: { activa: true } })).toBe(8);
     await expect(db.usuario.findUniqueOrThrow({ where: { usuario: "admin" } })).resolves.toMatchObject({ rol: "ADMIN", activo: true });
   });
 

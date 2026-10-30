@@ -284,7 +284,7 @@ def probar(navegador: Browser, mesas: dict[str, str]) -> None:
         expect(pp).to_have_url(f"{BASE}/admin/mesas")
         for seccion in ["Pedidos", "Mesas", "Carta", "Ventas", "Ajustes"]:
             expect(menu(pp).get_by_role("link", name=seccion)).to_be_visible()
-        expect(pp.get_by_role("link", name=re.compile(r"^Mesa 10\b"))).to_be_visible()
+        expect(pp.get_by_role("link", name=re.compile(r"^Mesa 8\b"))).to_be_visible()
         accesibilidad(pp, "mesas")
         menu(pp).get_by_role("link", name="Pedidos").click()
         expect(pp.locator(".indicador-vivo[data-conectado=true]")).to_be_visible()
@@ -445,15 +445,15 @@ def probar(navegador: Browser, mesas: dict[str, str]) -> None:
         pp.get_by_role("button", name="Agregar", exact=True).click()
         expect(pp.get_by_role("status")).to_contain_text("Se agregó 1 mesa")
         pp.goto(f"{BASE}/admin/mesas/qr")
-        expect(pp.locator("article.qr-tarjeta-mesa")).to_have_count(11)
+        expect(pp.locator("article.qr-tarjeta-mesa")).to_have_count(9)
         pp.add_script_tag(content=JSQR)
         leido_3 = pp.get_by_role("article", name="Código QR de la mesa 3").locator("svg").evaluate(LEER_QR)
         assert leido_3 == f"{BASE}/m/{mesas['3']}", leido_3
-        leido_11 = pp.get_by_role("article", name="Código QR de la mesa 11").locator("svg").evaluate(LEER_QR)
-        assert leido_11 and re.fullmatch(rf"{BASE}/m/[2-9a-z]{{8}}", leido_11), leido_11
+        leido_9 = pp.get_by_role("article", name="Código QR de la mesa 9").locator("svg").evaluate(LEER_QR)
+        assert leido_9 and re.fullmatch(rf"{BASE}/m/[2-9a-z]{{8}}", leido_9), leido_9
         pp.screenshot(path=CAPTURAS / "panel-qr.png")
-        cp.goto(leido_11)
-        expect(cp.get_by_text("Mesa 11").first).to_be_visible()
+        cp.goto(leido_9)
+        expect(cp.get_by_text("Mesa 9").first).to_be_visible()
 
     with paso("Un usuario de caja cobra pero no edita la carta"):
         menu(pp).get_by_role("link", name="Ajustes").click()

@@ -1,5 +1,5 @@
 // Deja la base de pruebas como una instalación nueva para la prueba de punta a punta:
-// migraciones al día, tablas vacías y la siembra inicial (carta, 10 mesas, administrador).
+// migraciones al día, tablas vacías y la siembra inicial (carta, 8 mesas, administrador).
 // La última línea que imprime es el JSON { número de mesa: código }.
 import { execSync } from "node:child_process";
 import { RAIZ, urlBasePruebas } from "../integracion/base-pruebas";

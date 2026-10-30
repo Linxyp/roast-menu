@@ -37,7 +37,7 @@ cp .env.example .env     # llenar POSTGRES_PASSWORD, AUTH_SECRET y SEED_ADMIN_CL
 npm install
 npm run db:up            # PostgreSQL en Docker (127.0.0.1:5547)
 npm run db:migrar
-npm run db:seed          # carta inicial, 10 mesas y el administrador (se puede repetir)
+npm run db:seed          # carta inicial, 8 mesas y el administrador (se puede repetir)
 npm run dev              # http://localhost:3520 — panel en /admin
 ```
 
