@@ -1,0 +1,25 @@
+# Base de datos local para desarrollo y pruebas:  npm run db:up
+# Crea dos bases: "roast" (desarrollo) y "roast_test" (pruebas de integración).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: roast-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-roast}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:-roast}
+      TZ: UTC
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5547}:5432"
+    volumes:
+      - roast_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-roast} -d ${POSTGRES_DB:-roast}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  roast_postgres_data:

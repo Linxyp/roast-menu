@@ -1,28 +1,16 @@
-import { Encabezado } from "@/components/Encabezado";
-import { NavCategorias } from "@/components/NavCategorias";
-import { PiePagina } from "@/components/PiePagina";
-import { SeccionCategoria } from "@/components/SeccionCategoria";
-import { CATEGORIAS, productosDe } from "@/data/menu";
+import { PaginaCarta } from "@/components/carta/PaginaCarta";
+import { ProveedorPedido } from "@/components/pedido/ProveedorPedido";
+import { cargarCarta } from "@/server/carta";
 
-export default function PaginaMenu() {
+// La carta cambia desde el panel: se arma en cada visita.
+export const dynamic = "force-dynamic";
+
+/** Carta general (sin mesa): se ve todo, pero para pedir hay que escanear el QR de la mesa. */
+export default async function Inicio() {
+  const carta = await cargarCarta();
   return (
-    <>
-      <a href="#menu" className="saltar">
-        Saltar al menú
-      </a>
-      <Encabezado />
-      <NavCategorias categorias={CATEGORIAS.map(({ id, nombre }) => ({ id, nombre }))} />
-      <main id="menu" tabIndex={-1} className="outline-none">
-        {CATEGORIAS.map((categoria, indice) => (
-          <SeccionCategoria
-            key={categoria.id}
-            categoria={categoria}
-            productos={productosDe(categoria.id)}
-            primera={indice === 0}
-          />
-        ))}
-      </main>
-      <PiePagina />
-    </>
+    <ProveedorPedido carta={carta} mesa={null}>
+      <PaginaCarta carta={carta} mesa={null} />
+    </ProveedorPedido>
   );
 }

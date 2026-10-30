@@ -1,0 +1,59 @@
+# Producción en un servidor Linux con Docker. Lo instala y actualiza scripts/desplegar-servidor.sh
+# (guía en docs/DESPLIEGUE.md): la imagen se construye en el equipo de desarrollo y se sube
+# ya lista, así el servidor no compila nada.
+# Variables: archivo .env junto a este (lo escribe el script a partir de .env.produccion).
+services:
+  # Nombres únicos (roast-*): en un servidor compartido la aplicación entra a la red de
+  # otro proyecto, y un "app" o "db" repetido mezclaría los servicios.
+  roast-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Define POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-roast}
+      TZ: UTC
+    # Solo para el túnel SSH de las migraciones; no queda expuesto a internet.
+    ports:
+      - "127.0.0.1:${PUERTO_DB:-5443}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-roast}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  roast-app:
+    image: roast-menu:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@roast-db:5432/${POSTGRES_DB:-roast}
+    depends_on:
+      roast-db:
+        condition: service_healthy
+
+  # HTTPS automático (Let's Encrypt) en un servidor propio (perfil proxy-propio). En uno
+  # compartido, el HTTPS lo da el Caddy del otro proyecto (docker-compose.compartido.yml).
+  # La cookie del panel usa el prefijo __Host-, que los navegadores solo aceptan por HTTPS.
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["proxy-propio"]
+    restart: unless-stopped
+    environment:
+      DOMINIO: ${DOMINIO:?Define DOMINIO}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - roast-app
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

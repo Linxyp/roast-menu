@@ -1,0 +1,272 @@
+// =====================================================================
+// ROAST — modelo de datos del sistema de pedidos por QR.
+//
+//  · Dinero en pesos colombianos enteros (Int): nunca decimales.
+//  · Los pedidos guardan una copia de nombres, detalles y precios al momento
+//    de pedir: editar o borrar productos después no cambia pedidos pasados.
+//  · Las fotos se guardan en la base ya optimizadas (WebP): un solo respaldo
+//    (pg_dump) incluye todo.
+// =====================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Rol en el panel. ADMIN además edita carta, mesas, ajustes y usuarios.
+enum Rol {
+  ADMIN
+  PERSONAL
+}
+
+/// Camino del pedido en cocina y servicio. El pago va aparte (pagadoEn): se puede cobrar
+/// antes o después de entregar. Un pedido se cierra al estar ENTREGADO y pagado, o CANCELADO.
+enum EstadoPedido {
+  NUEVO
+  PREPARANDO
+  LISTO
+  ENTREGADO
+  CANCELADO
+}
+
+// ---------------------------------------------------------------------
+// Acceso al panel
+// ---------------------------------------------------------------------
+
+model Usuario {
+  id        String   @id @default(cuid())
+  usuario   String   @unique
+  nombre    String
+  claveHash String
+  rol       Rol      @default(PERSONAL)
+  activo    Boolean  @default(true)
+  creadoEn  DateTime @default(now())
+  sesiones  Sesion[]
+}
+
+/// El id es el HMAC del token de la cookie: quien lea la base no puede usar las sesiones.
+model Sesion {
+  id        String   @id
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  creadaEn  DateTime @default(now())
+  vistaEn   DateTime @default(now())
+  expiraEn  DateTime
+
+  @@index([usuarioId])
+}
+
+// ---------------------------------------------------------------------
+// Carta
+// ---------------------------------------------------------------------
+
+model Imagen {
+  id           String        @id @default(cuid())
+  ancho        Int
+  alto         Int
+  color        String        @default("#1a1612")
+  transparente Boolean       @default(false)
+  /// WebP de hasta 1200 px de lado.
+  grande       Bytes
+  /// WebP de hasta 480 px (miniaturas y celulares).
+  mini         Bytes
+  creadaEn     DateTime      @default(now())
+  productos    Producto[]
+  toppings     Topping[]
+  opciones     OpcionGrupo[]
+}
+
+model Categoria {
+  id              String     @id @default(cuid())
+  /// Nombre en la barra de categorías.
+  nombre          String
+  /// Título de la sección en dos partes, como en los afiches: «Arma tu» + «hamburguesa» (en pincel).
+  tituloPrincipal String?
+  tituloPincel    String?
+  pincelPrimero   Boolean    @default(false)
+  lema            String?
+  orden           Int        @default(0)
+  visible         Boolean    @default(true)
+  productos       Producto[]
+}
+
+model Producto {
+  id                     String          @id @default(cuid())
+  categoriaId            String
+  categoria              Categoria       @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  nombre                 String
+  descripcion            String?
+  imagenId               String?
+  imagen                 Imagen?         @relation(fields: [imagenId], references: [id], onDelete: SetNull)
+  orden                  Int             @default(0)
+  /// Oculto: no aparece en la carta.
+  visible                Boolean         @default(true)
+  /// Agotado: se ve en la carta pero no se puede pedir.
+  agotado                Boolean         @default(false)
+  listaToppingsId        String?
+  listaToppings          ListaToppings?  @relation(fields: [listaToppingsId], references: [id], onDelete: SetNull)
+  /// Valor de cada topping por encima de los incluidos. Vacío: no se venden adicionales.
+  precioToppingAdicional Int?
+  /// Tope de toppings por unidad. Vacío: sin tope.
+  maxToppings            Int?
+  /// Texto pequeño bajo el producto (p. ej. el aviso legal de la cerveza).
+  nota                   String?
+  niveles                NivelPrecio[]
+  grupos                 GrupoOpciones[]
+  items                  ItemPedido[]
+  creadoEn               DateTime        @default(now())
+  actualizadoEn          DateTime        @updatedAt
+
+  @@index([categoriaId, orden])
+}
+
+/// Un precio del producto según los toppings incluidos: «Sencilla $16.900 (0)», «Con 2 toppings $19.900 (2)».
+/// Se cobra siempre la combinación más económica para el cliente (ver src/lib/precios.ts).
+model NivelPrecio {
+  id                String   @id @default(cuid())
+  productoId        String
+  producto          Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  nombre            String
+  detalle           String?
+  precio            Int
+  toppingsIncluidos Int      @default(0)
+  orden             Int      @default(0)
+}
+
+/// Elección obligatoria de una opción: «Elige tu carne: Res o Pollo».
+model GrupoOpciones {
+  id         String        @id @default(cuid())
+  productoId String
+  producto   Producto      @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  /// Lo que ve el cliente: «Elige tu carne».
+  titulo     String
+  /// Lo que dice el recibo antes de la opción: «Carne» → «Carne: Res». Vacío: solo la opción.
+  etiqueta   String        @default("")
+  orden      Int           @default(0)
+  opciones   OpcionGrupo[]
+}
+
+model OpcionGrupo {
+  id          String        @id @default(cuid())
+  grupoId     String
+  grupo       GrupoOpciones @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  nombre      String
+  precioExtra Int           @default(0)
+  imagenId    String?
+  imagen      Imagen?       @relation(fields: [imagenId], references: [id], onDelete: SetNull)
+  disponible  Boolean       @default(true)
+  orden       Int           @default(0)
+}
+
+/// Toppings compartidos por varios productos (marcar uno agotado aplica a todos).
+model ListaToppings {
+  id        String     @id @default(cuid())
+  nombre    String
+  orden     Int        @default(0)
+  toppings  Topping[]
+  productos Producto[]
+}
+
+model Topping {
+  id         String        @id @default(cuid())
+  listaId    String
+  lista      ListaToppings @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  nombre     String
+  imagenId   String?
+  imagen     Imagen?       @relation(fields: [imagenId], references: [id], onDelete: SetNull)
+  disponible Boolean       @default(true)
+  orden      Int           @default(0)
+}
+
+// ---------------------------------------------------------------------
+// Mesas y pedidos
+// ---------------------------------------------------------------------
+
+model Mesa {
+  id       String   @id @default(cuid())
+  numero   Int      @unique
+  nombre   String?
+  /// Código aleatorio del QR (/m/<codigo>): no se puede adivinar el de otra mesa.
+  codigo   String   @unique
+  activa   Boolean  @default(true)
+  creadaEn DateTime @default(now())
+  pedidos  Pedido[]
+}
+
+model Pedido {
+  id            String       @id @default(cuid())
+  /// Día de operación en Colombia; el número reinicia cada día (#1, #2…).
+  fecha         DateTime     @db.Date
+  numero        Int
+  mesaId        String?
+  mesa          Mesa?        @relation(fields: [mesaId], references: [id], onDelete: SetNull)
+  mesaNumero    Int
+  cliente       String
+  nota          String?
+  estado        EstadoPedido @default(NUEVO)
+  total         Int
+  metodoPago    String?
+  pagadoEn      DateTime?
+  impresoEn     DateTime?
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @updatedAt
+  items         ItemPedido[]
+
+  @@unique([fecha, numero])
+  @@index([estado, pagadoEn])
+  @@index([mesaId, estado])
+  @@index([pagadoEn])
+}
+
+model ItemPedido {
+  id             String    @id @default(cuid())
+  pedidoId       String
+  pedido         Pedido    @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId     String?
+  producto       Producto? @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  nombre         String
+  detalles       String[]
+  cantidad       Int
+  precioUnitario Int
+  subtotal       Int
+  nota           String?
+  orden          Int       @default(0)
+
+  @@index([pedidoId])
+}
+
+/// Consecutivo diario de pedidos (se incrementa con una sola sentencia atómica).
+model ContadorPedidos {
+  fecha  DateTime @id @db.Date
+  ultimo Int
+}
+
+// ---------------------------------------------------------------------
+// Ajustes y protección
+// ---------------------------------------------------------------------
+
+model Ajustes {
+  id                Int      @id @default(1)
+  nombreNegocio     String   @default("ROAST Hamburguesas Artesanales")
+  pieRecibo         String   @default("¡Gracias por tu visita!")
+  /// Ancho del papel de la impresora de recibos: 58 u 80 mm.
+  anchoRecibo       Int      @default(80)
+  metodosPago       String[] @default(["Efectivo", "Nequi", "Daviplata", "Tarjeta"])
+  /// Pausa los pedidos desde el QR (la carta se sigue viendo).
+  recibiendoPedidos Boolean  @default(true)
+  direccion         String   @default("")
+  horario           String   @default("")
+  instagram         String   @default("")
+  actualizadoEn     DateTime @updatedAt
+}
+
+/// Límite de intentos por ventana de tiempo (ingreso al panel, pedidos por mesa).
+model LimiteTasa {
+  clave    String   @id
+  conteo   Int
+  expiraEn DateTime
+}

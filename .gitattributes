@@ -1,0 +1,4 @@
+# Los scripts que corren en Linux (servidor y contenedores) necesitan fin de línea LF.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf

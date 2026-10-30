@@ -1,0 +1,14 @@
+# Servidor compartido con otro proyecto que ya publica 80/443 con su Caddy.
+# Se suma a docker-compose.prod.yml (el script lo deja en COMPOSE_FILE): la aplicación
+# (roast-app) entra a la red de ese Caddy (RED_PROXY) y el script le deja a ese Caddy el
+# bloque de este sitio. La base de datos no entra a esa red.
+services:
+  roast-app:
+    networks:
+      default: {}
+      proxy: {}
+
+networks:
+  proxy:
+    external: true
+    name: ${RED_PROXY:?Define RED_PROXY}

@@ -1,41 +1,32 @@
 import type { Metadata, Viewport } from "next";
 import { Knewave, Oswald } from "next/font/google";
 import type { ReactNode } from "react";
-import { NEGOCIO } from "@/data/negocio";
-import { ruta } from "@/lib/ruta";
-import { normalizarUrlPublica } from "@/lib/url";
 import "./globals.css";
 
 const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald", display: "swap" });
 const knewave = Knewave({ subsets: ["latin"], weight: "400", variable: "--font-knewave", display: "swap" });
 
-const urlPublica = normalizarUrlPublica(NEGOCIO.urlPublica);
+const url = process.env.APP_URL || "http://localhost:3520";
 const titulo = "ROAST · Menú | Hamburguesas artesanales";
-// WhatsApp y las redes necesitan la dirección completa de la imagen para mostrar la vista previa.
-const imagenCompartir = urlPublica ? new URL("og-roast.jpg", urlPublica).toString() : ruta("/og-roast.jpg");
+const descripcion =
+  "Carta de ROAST Hamburguesas Artesanales: hamburguesas, combo, perros, salchipapas, mazorcadas y bebidas. Pide desde el QR de tu mesa.";
 
 export const metadata: Metadata = {
-  ...(urlPublica ? { metadataBase: new URL(urlPublica), alternates: { canonical: urlPublica } } : {}),
+  metadataBase: new URL(url),
   title: titulo,
-  description: NEGOCIO.descripcion,
-  applicationName: NEGOCIO.nombre,
+  description: descripcion,
+  applicationName: "ROAST",
   openGraph: {
     type: "website",
     locale: "es_CO",
-    siteName: NEGOCIO.nombreCompleto,
+    siteName: "ROAST Hamburguesas Artesanales",
     title: titulo,
-    description: NEGOCIO.descripcion,
-    ...(urlPublica ? { url: urlPublica } : {}),
-    images: [{ url: imagenCompartir, width: 1200, height: 630, alt: NEGOCIO.nombreCompleto }],
+    description: descripcion,
+    images: [{ url: "/og-roast.jpg", width: 1200, height: 630, alt: "ROAST Hamburguesas Artesanales" }],
   },
-  twitter: {
-    card: "summary_large_image",
-    title: titulo,
-    description: NEGOCIO.descripcion,
-    images: [imagenCompartir],
-  },
+  twitter: { card: "summary_large_image", title: titulo, description: descripcion, images: ["/og-roast.jpg"] },
   formatDetection: { telephone: false, address: false, email: false },
-  appleWebApp: { title: NEGOCIO.nombre, statusBarStyle: "black-translucent" },
+  appleWebApp: { title: "ROAST", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

@@ -8,6 +8,7 @@
     "hamburguesa":            { "afiche": "hamburguesas", "caja": [536, 8, 1024, 476] },
     "combo":                  { "afiche": "hamburguesas", "caja": [340, 1150, 816, 1478], "tapar": [[338, 1158, 358, 1230]] },
     "salchipapas":            { "afiche": "salchipapas",  "caja": [540, 15, 1024, 524] },
+    "salchipapas-bandeja":    { "afiche": "salchipapas",  "caja": [38, 539, 510, 781] },
     "coca-cola":              { "afiche": "salchipapas",  "caja": [316, 1196, 474, 1500], "sin_fondo": true },
     "cerveza-3-cordilleras":  { "afiche": "salchipapas",  "caja": [662, 1184, 814, 1502], "sin_fondo": true },
 

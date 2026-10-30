@@ -1,0 +1,13 @@
+# Proxy HTTPS delante de la aplicación (servicio "caddy" de docker-compose.prod.yml).
+# DOMINIO: dominio propio o, sin dominio, <ip-con-guiones>.sslip.io.
+{$DOMINIO} {
+	# El canal en vivo del panel (Server-Sent Events) va sin comprimir y sin búfer.
+	@comprimir not path /api/admin/eventos
+	encode @comprimir zstd gzip
+	request_body {
+		max_size 12MB
+	}
+	reverse_proxy roast-app:3000 {
+		flush_interval -1
+	}
+}

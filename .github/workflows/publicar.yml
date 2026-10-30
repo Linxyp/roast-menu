@@ -1,4 +1,4 @@
-name: Publicar la carta en GitHub Pages
+name: Pruebas y enlace de la carta
 
 on:
   push:
@@ -15,8 +15,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  compilar:
+  pruebas:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: roast
+          POSTGRES_PASSWORD: roast
+          POSTGRES_DB: roast_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U roast -d roast_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://roast:roast@localhost:5432/roast_test
+      DATABASE_URL_TEST: postgresql://roast:roast@localhost:5432/roast_test
+      AUTH_SECRET: secreto-solo-para-las-pruebas-de-github-actions
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,24 +39,51 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - id: pages
-        uses: actions/configure-pages@v5
-      - name: Dirección pública de la carta
-        # La URL real del sitio (o el dominio propio, si se configura en Settings → Pages → Custom domain).
-        # Con ella se generan el QR y la vista previa al compartir el enlace.
-        run: |
-          echo "NEXT_PUBLIC_SITE_URL=${{ steps.pages.outputs.base_url }}/" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_BASE_PATH=${{ steps.pages.outputs.base_path }}" >> "$GITHUB_ENV"
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm test
-      - run: npm run build
-      - run: touch out/.nojekyll
+      - run: npm run test:integracion
+
+  # La carta de antes vivía en GitHub Pages y su QR ya está impreso: ahora esa dirección solo
+  # lleva a la carta del sistema. URL_SISTEMA es una variable del repositorio
+  # (Settings → Secrets and variables → Actions → Variables); mientras no exista, este paso se
+  # omite y queda en línea lo que ya estaba (el QR impreso no apunta a algo que aún no existe).
+  enlace:
+    needs: pruebas
+    if: vars.URL_SISTEMA != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Página que lleva a la carta del sistema
+        env:
+          DESTINO: ${{ vars.URL_SISTEMA }}
+        run: |
+          mkdir sitio
+          cat > sitio/index.html <<HTML
+          <!doctype html>
+          <html lang="es">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta name="robots" content="noindex">
+          <meta http-equiv="refresh" content="0; url=$DESTINO">
+          <link rel="canonical" href="$DESTINO">
+          <title>ROAST Hamburguesas Artesanales</title>
+          <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0a08;color:#f7f0e3;font:16px/1.5 system-ui,sans-serif;text-align:center}a{color:#f5b51e}</style>
+          </head>
+          <body>
+          <p>Abriendo la carta de ROAST…<br><a href="$DESTINO">Toca aquí si no abre sola</a></p>
+          <script>location.replace("$DESTINO")</script>
+          </body>
+          </html>
+          HTML
+          cp sitio/index.html sitio/404.html
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: out
+          path: sitio
 
   publicar:
-    needs: compilar
+    needs: enlace
     runs-on: ubuntu-latest
     environment:
       name: github-pages

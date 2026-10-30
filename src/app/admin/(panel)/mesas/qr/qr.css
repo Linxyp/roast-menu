@@ -1,0 +1,89 @@
+/* Tarjetas del QR de cada mesa: 6 por hoja carta/oficio, a color (fondo carbón y logo dorado). */
+.qr-hoja {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+.qr-tarjeta-mesa {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 1.25rem 1rem 1.1rem;
+  border: 1px solid var(--linea-oro);
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(14rem 10rem at 50% 0, rgb(201 151 58 / 0.22), transparent 70%),
+    var(--color-carbon-900);
+  text-align: center;
+  break-inside: avoid;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.qr-logo {
+  width: 9rem;
+  height: auto;
+}
+.qr-mesa {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-mostaza);
+}
+.qr-nombre {
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+.qr-codigo {
+  width: 11rem;
+  padding: 0.6rem;
+  border-radius: 0.8rem;
+  background: #fff;
+}
+.qr-codigo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.qr-instruccion {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-oro-300);
+}
+
+@media print {
+  @page {
+    margin: 10mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  .panel {
+    display: block;
+  }
+  .panel-menu,
+  .no-imprimir {
+    display: none !important;
+  }
+  .panel-contenido {
+    padding: 0;
+  }
+  .qr-hoja {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6mm;
+  }
+  .qr-tarjeta-mesa {
+    height: 82mm;
+    align-content: center;
+    padding: 4mm;
+  }
+  .qr-codigo {
+    width: 40mm;
+  }
+}

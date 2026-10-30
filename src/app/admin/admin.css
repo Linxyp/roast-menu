@@ -1,0 +1,779 @@
+/* Panel del restaurante. Usa los colores de globals.css; pensado para computador o tableta. */
+/* En la capa «components», como globals.css: así las utilidades de Tailwind (hidden, mb-0…) pueden ajustarlas. */
+@layer components {
+  /* Celular y tableta: barra arriba (logo y salir) y menú fijo abajo, como en las apps.
+     Computador (desde 1024 px): menú lateral. */
+  .panel {
+    --alto-menu-movil: calc(4rem + env(safe-area-inset-bottom));
+    display: grid;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+  @media (min-width: 1024px) {
+    .panel {
+      --alto-menu-movil: 0px;
+      grid-template-columns: 15rem minmax(0, 1fr);
+      grid-template-rows: none;
+    }
+  }
+
+  .panel-menu {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--linea-oro-suave);
+    background: rgb(11 10 8 / 0.97);
+  }
+  @media (min-width: 1024px) {
+    .panel-menu {
+      height: 100dvh;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 1.5rem;
+      padding: 1.5rem 1rem;
+      border-right: 1px solid var(--linea-oro-suave);
+      border-bottom: 0;
+    }
+  }
+  .panel-logo {
+    width: 5.5rem;
+    height: auto;
+  }
+  @media (min-width: 1024px) {
+    .panel-logo {
+      width: 9rem;
+      margin-inline: auto;
+    }
+  }
+  .panel-enlaces {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 30;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.25rem;
+    padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--linea-oro-suave);
+    background: rgb(11 10 8 / 0.98);
+  }
+  @media (min-width: 1024px) {
+    .panel-enlaces {
+      position: static;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0;
+      border-top: 0;
+      background: none;
+    }
+  }
+  .panel-enlace {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 3.3rem;
+    border-radius: 0.75rem;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--texto-suave);
+  }
+  @media (min-width: 1024px) {
+    .panel-enlace {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.65rem;
+      min-height: 2.75rem;
+      padding: 0 0.85rem;
+      font-size: 0.98rem;
+      letter-spacing: 0.05em;
+    }
+  }
+  @media (hover: hover) {
+    .panel-enlace:hover {
+      background: rgb(247 240 227 / 0.06);
+      color: var(--color-crema);
+    }
+  }
+  .panel-enlace[aria-current="page"] {
+    background: rgb(245 181 30 / 0.14);
+    color: var(--color-mostaza);
+    font-weight: 600;
+  }
+  @media (min-width: 1024px) {
+    .panel-enlace[aria-current="page"] {
+      background: var(--color-mostaza);
+      color: var(--color-tinta);
+    }
+  }
+  .panel-usuario {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .panel-usuario {
+      display: grid;
+      gap: 0.5rem;
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid var(--linea-oro-suave);
+      font-size: 0.85rem;
+      color: var(--texto-suave);
+    }
+  }
+  .panel-salir-movil {
+    display: inline-flex;
+  }
+  @media (min-width: 1024px) {
+    .panel-salir-movil {
+      display: none;
+    }
+  }
+
+  .panel-contenido {
+    min-width: 0;
+    padding: 1.25rem 1rem calc(3rem + var(--alto-menu-movil));
+  }
+  @media (min-width: 768px) {
+    .panel-contenido {
+      padding: 1.75rem 2rem calc(4rem + var(--alto-menu-movil));
+    }
+  }
+
+  .panel-titulo {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 4vw, 2.3rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .panel-subtitulo {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-oro-300);
+  }
+  .panel-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .panel-texto-suave {
+    font-size: 0.9rem;
+    color: var(--texto-suave);
+  }
+
+  .caja {
+    padding: 1.1rem;
+    border: 1px solid var(--linea-oro-suave);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgb(32 27 20 / 0.55), rgb(19 17 13 / 0.85));
+  }
+  @media (min-width: 768px) {
+    .caja {
+      padding: 1.35rem;
+    }
+  }
+
+  .boton-panel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 2.6rem;
+    padding: 0 0.95rem;
+    border: 1px solid var(--linea-oro);
+    border-radius: 0.7rem;
+    background: rgb(11 10 8 / 0.4);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-crema);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .boton-panel:hover {
+    border-color: var(--color-oro-400);
+  }
+  .boton-panel:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .boton-panel-principal {
+    border-color: var(--color-mostaza);
+    background: var(--color-mostaza);
+    color: var(--color-tinta);
+  }
+  .boton-panel-principal:hover {
+    filter: brightness(1.07);
+  }
+  .boton-panel-peligro {
+    border-color: rgb(255 180 162 / 0.55);
+    color: var(--color-alerta);
+  }
+  .boton-panel-exito {
+    border-color: rgb(143 220 160 / 0.6);
+    color: var(--color-exito);
+  }
+  .boton-panel-mini {
+    min-height: 2.2rem;
+    padding: 0 0.6rem;
+    font-size: 0.82rem;
+  }
+
+  .etiqueta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .etiqueta-nuevo {
+    background: var(--color-mostaza);
+    color: var(--color-tinta);
+  }
+  .etiqueta-preparando {
+    background: #2f5f8a;
+    color: #e8f2ff;
+  }
+  .etiqueta-listo {
+    background: #2e6b45;
+    color: #e7ffee;
+  }
+  .etiqueta-entregado {
+    background: #4a4337;
+    color: var(--color-crema);
+  }
+  .etiqueta-cancelado {
+    background: #6b2e2e;
+    color: #ffe9e9;
+  }
+  .etiqueta-pagado {
+    border: 1px solid var(--color-exito);
+    color: var(--color-exito);
+  }
+  .etiqueta-por-cobrar {
+    border: 1px solid var(--color-alerta);
+    color: var(--color-alerta);
+  }
+  .etiqueta-neutra {
+    border: 1px solid var(--linea-oro);
+    color: var(--texto-suave);
+  }
+
+  /* ---------- Tablero de pedidos ---------- */
+  .tablero {
+    display: grid;
+    gap: 1rem;
+    align-items: start;
+  }
+  @media (min-width: 1100px) {
+    .tablero {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .tablero-columna {
+    display: grid;
+    gap: 0.75rem;
+    align-content: start;
+  }
+  .tablero-columna-titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.2rem;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-oro-300);
+  }
+  .tablero-vacio {
+    padding: 1.25rem;
+    border: 1px dashed var(--linea-oro-suave);
+    border-radius: 0.9rem;
+    font-size: 0.88rem;
+    text-align: center;
+    color: var(--texto-tenue);
+  }
+  .pestanas {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  @media (min-width: 1100px) {
+    .pestanas {
+      display: none;
+    }
+  }
+  .pestana {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.6rem;
+    padding: 0 0.9rem;
+    border: 1px solid var(--linea-oro);
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--texto-suave);
+    cursor: pointer;
+  }
+  .pestana[aria-selected="true"],
+  .pestana[aria-current="page"] {
+    border-color: var(--color-mostaza);
+    background: var(--color-mostaza);
+    color: var(--color-tinta);
+    font-weight: 600;
+  }
+  .pestana-contador {
+    min-width: 1.4rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: rgb(11 10 8 / 0.35);
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .pedido-tarjeta {
+    display: grid;
+    gap: 0.7rem;
+    padding: 1rem;
+    border: 1px solid var(--linea-oro-suave);
+    border-radius: 1rem;
+    background: var(--color-carbon-900);
+    box-shadow: 0 18px 36px -28px rgb(0 0 0 / 0.95);
+  }
+  .pedido-tarjeta-nuevo {
+    border-color: var(--color-mostaza);
+    box-shadow:
+      0 0 0 1px var(--color-mostaza),
+      0 18px 36px -24px rgb(245 181 30 / 0.55);
+  }
+  .pedido-tarjeta-recien {
+    animation: resaltar 1.4s ease-out 2;
+  }
+  @keyframes resaltar {
+    0%,
+    100% {
+      background: var(--color-carbon-900);
+    }
+    40% {
+      background: rgb(245 181 30 / 0.18);
+    }
+  }
+  .pedido-tarjeta-cabecera {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .pedido-numero {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-mostaza);
+  }
+  .pedido-mesa-grande {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .pedido-tiempo {
+    font-size: 0.8rem;
+    color: var(--texto-tenue);
+    white-space: nowrap;
+  }
+  .pedido-items {
+    display: grid;
+    gap: 0.5rem;
+    padding-block: 0.7rem;
+    border-block: 1px solid var(--linea-oro-suave);
+  }
+  .pedido-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 0.55rem;
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+  .pedido-item-cantidad {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-mostaza);
+  }
+  .pedido-item-nombre {
+    font-weight: 600;
+  }
+  .pedido-item-detalle {
+    grid-column: 2;
+    font-size: 0.84rem;
+    color: var(--texto-suave);
+  }
+  .pedido-item-nota {
+    grid-column: 2;
+    font-size: 0.84rem;
+    font-style: italic;
+    color: var(--color-oro-200);
+  }
+  .pedido-nota-general {
+    padding: 0.5rem 0.7rem;
+    border-left: 3px solid var(--color-oro-400);
+    border-radius: 0.4rem;
+    background: rgb(201 151 58 / 0.08);
+    font-size: 0.88rem;
+  }
+  .pedido-pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .pedido-total-panel {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  .pedido-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .indicador-vivo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+  }
+  .indicador-vivo::before {
+    content: "";
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 999px;
+    background: var(--color-alerta);
+  }
+  .indicador-vivo[data-conectado="true"]::before {
+    background: var(--color-exito);
+    box-shadow: 0 0 10px rgb(143 220 160 / 0.8);
+  }
+
+  /* ---------- Mesas ---------- */
+  .mesas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+    gap: 0.85rem;
+  }
+  .mesa-tarjeta {
+    display: grid;
+    gap: 0.4rem;
+    padding: 1rem;
+    border: 1px solid var(--linea-oro-suave);
+    border-radius: 1rem;
+    background: var(--color-carbon-900);
+  }
+  .mesa-tarjeta:hover {
+    border-color: var(--color-oro-400);
+  }
+  .mesa-tarjeta-numero {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .mesa-tarjeta[data-estado="cocina"] {
+    border-color: var(--color-mostaza);
+  }
+  .mesa-tarjeta[data-estado="cobrar"] {
+    border-color: var(--color-alerta);
+  }
+  .mesa-tarjeta[data-estado="inactiva"] {
+    opacity: 0.5;
+  }
+
+  /* ---------- Tablas ---------- */
+  .tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  .tabla th {
+    padding: 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--linea-oro);
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-align: left;
+    text-transform: uppercase;
+    color: var(--color-oro-300);
+  }
+  .tabla td {
+    padding: 0.65rem 0.5rem;
+    border-bottom: 1px solid var(--linea-oro-suave);
+    vertical-align: top;
+  }
+  .tabla .numero {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .tabla-envoltura {
+    overflow-x: auto;
+  }
+
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 0.85rem;
+  }
+  .kpi {
+    padding: 1rem;
+    border: 1px solid var(--linea-oro-suave);
+    border-radius: 1rem;
+    background: var(--color-carbon-900);
+  }
+  .kpi dt {
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+  }
+  .kpi dd {
+    margin-top: 0.3rem;
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-mostaza);
+  }
+
+  /* ---------- Formularios del panel ---------- */
+  .formulario {
+    display: grid;
+    gap: 1rem;
+  }
+  .fila-campos {
+    display: grid;
+    gap: 1rem;
+  }
+  @media (min-width: 640px) {
+    .fila-campos {
+      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+  }
+  .interruptor {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.6rem;
+    font-size: 0.92rem;
+    cursor: pointer;
+  }
+  .interruptor input {
+    position: relative;
+    width: 2.6rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    appearance: none;
+    border-radius: 999px;
+    background: var(--color-carbon-700);
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  .interruptor input::after {
+    content: "";
+    position: absolute;
+    top: 0.2rem;
+    left: 0.2rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 999px;
+    background: var(--color-crema);
+    transition: transform 0.15s;
+  }
+  .interruptor input:checked {
+    background: var(--color-mostaza);
+  }
+  .interruptor input:checked::after {
+    transform: translateX(1.1rem);
+    background: var(--color-tinta);
+  }
+  .interruptor input:focus-visible {
+    outline: 3px solid var(--color-mostaza);
+    outline-offset: 2px;
+  }
+  /* Elección única entre pocas opciones (p. ej. el ancho del papel). */
+  .segmentos {
+    display: inline-flex;
+    width: fit-content;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid rgb(247 240 227 / 0.24);
+    border-radius: 0.85rem;
+    background: var(--color-carbon-950);
+  }
+  .segmentos label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.4rem;
+    padding: 0 1.1rem;
+    border-radius: 0.6rem;
+    font-weight: 600;
+    color: var(--texto-suave);
+    cursor: pointer;
+  }
+  .segmentos input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .segmentos label:has(input:checked) {
+    background: var(--color-mostaza);
+    color: var(--color-tinta);
+  }
+  .segmentos label:has(input:focus-visible) {
+    outline: 3px solid var(--color-mostaza);
+    outline-offset: 2px;
+  }
+  .mensaje-exito {
+    padding: 0.6rem 0.85rem;
+    border: 1px solid rgb(143 220 160 / 0.5);
+    border-radius: 0.7rem;
+    color: var(--color-exito);
+    font-size: 0.9rem;
+  }
+  .mensaje-error {
+    padding: 0.6rem 0.85rem;
+    border: 1px solid rgb(255 180 162 / 0.55);
+    border-radius: 0.7rem;
+    color: var(--color-alerta);
+    font-size: 0.9rem;
+  }
+  .miniatura {
+    width: 3.5rem;
+    height: 3.5rem;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid var(--linea-oro-suave);
+    border-radius: 0.7rem;
+    background: var(--color-carbon-800);
+  }
+  .miniatura img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .miniatura .sin-foto {
+    min-height: 0;
+    padding: 0.3rem;
+  }
+  .miniatura .sin-foto-nombre {
+    display: none;
+  }
+  .lista-filas {
+    display: grid;
+    gap: 0.6rem;
+  }
+  .fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--linea-oro-suave);
+    border-radius: 0.9rem;
+    background: var(--color-carbon-900);
+  }
+  .fila-principal {
+    flex: 1;
+    min-width: 10rem;
+  }
+  .fila-nombre {
+    font-weight: 700;
+  }
+  .fila-detalle {
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+  }
+
+  /* Diálogo del panel (cobrar, confirmar) */
+  .dialogo-panel {
+    width: min(100% - 2rem, 28rem);
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--linea-oro);
+    border-radius: 1.1rem;
+    background: var(--color-carbon-900);
+    color: var(--color-crema);
+  }
+  .dialogo-panel::backdrop {
+    background: rgb(0 0 0 / 0.7);
+  }
+  .dialogo-panel-cuerpo {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+  .metodos-pago {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: 0.5rem;
+  }
+
+  /* ---------- Ingreso ---------- */
+  .ingreso {
+    display: grid;
+    min-height: 100dvh;
+    place-items: center;
+    padding: 2rem 1rem;
+  }
+  .ingreso-tarjeta {
+    display: grid;
+    gap: 1.25rem;
+    width: min(100%, 24rem);
+    padding: 2rem 1.5rem;
+    border: 1px solid var(--linea-oro);
+    border-radius: 1.4rem;
+    background: var(--color-carbon-900);
+  }
+}

@@ -39,6 +39,16 @@ export const IMAGENES: Record<string, InfoImagen> = {
     "color": "#472917",
     "transparente": false
   },
+  "salchipapas-bandeja": {
+    "anchos": [
+      472,
+      400
+    ],
+    "ancho": 472,
+    "alto": 242,
+    "color": "#452a1b",
+    "transparente": false
+  },
   "coca-cola": {
     "anchos": [
       151

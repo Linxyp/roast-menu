@@ -1,0 +1,113 @@
+/* Recibos para impresora térmica (58 u 80 mm). Negro puro sobre blanco: se imprime nítido. */
+body:has(.recibo-pagina) {
+  background: #d9d6cf !important;
+  background-image: none !important;
+  color: #000;
+}
+
+.recibo-pagina {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  padding: 1.5rem 0.75rem 3rem;
+}
+
+.recibo {
+  width: var(--ancho-recibo, 72mm);
+  padding: 4mm 3mm 6mm;
+  background: #fff;
+  color: #000;
+  font-family: "Arial", "Helvetica", sans-serif;
+  font-size: 12.5px;
+  line-height: 1.35;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+}
+.recibo-58 {
+  --ancho-recibo: 48mm;
+  font-size: 11px;
+}
+.recibo-centro {
+  text-align: center;
+}
+.recibo-marca {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+.recibo-titulo {
+  margin-top: 1.5mm;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.recibo-grande {
+  font-size: 20px;
+  font-weight: 900;
+}
+.recibo-separador {
+  margin: 2.5mm 0;
+  border: 0;
+  border-top: 1.5px dashed #000;
+}
+.recibo-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 2mm;
+  margin-bottom: 1.8mm;
+}
+.recibo-item-nombre {
+  font-weight: 800;
+}
+.recibo-item-detalle {
+  grid-column: 1 / -1;
+  padding-left: 4mm;
+  font-size: 0.92em;
+}
+.recibo-item-nota {
+  grid-column: 1 / -1;
+  padding-left: 4mm;
+  font-weight: 800;
+  font-style: italic;
+}
+.recibo-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 17px;
+  font-weight: 900;
+}
+.recibo-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+}
+.recibo-nota {
+  padding: 1.5mm;
+  border: 1.5px solid #000;
+  font-weight: 700;
+}
+.recibo-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+  body:has(.recibo-pagina) {
+    background: #fff !important;
+  }
+  .recibo-pagina {
+    display: block;
+    padding: 0;
+  }
+  .recibo {
+    box-shadow: none;
+    margin: 0;
+  }
+  .no-imprimir {
+    display: none !important;
+  }
+}

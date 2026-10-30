@@ -3,19 +3,28 @@
 
 # next.js
 /.next/
+/.next-*/
 /out/
 next-env.d.ts
 *.tsbuildinfo
 
-# QR: se genera al publicar, con la URL real (npm run qr)
-/public/qr/
+# cliente de Prisma generado
+/src/generated/
+
+# entorno: solo se versiona la plantilla
+.env*
+!.env.example
+
+# datos del servidor y credenciales (nunca en el repositorio público)
+/privado/
+/respaldos/
 
 # pruebas
 /tests/e2e/capturas/
+/test-results/
 __pycache__/
 
 # varios
 .DS_Store
 *.log
-.env*.local
-.vercel
+*.pem
