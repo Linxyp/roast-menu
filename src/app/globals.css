@@ -136,6 +136,8 @@ body {
   }
   .encabezado-mesa {
     display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
     margin-top: 1rem;
     padding: 0.35rem 1rem;
     border: 1px solid var(--color-mostaza);
@@ -156,6 +158,35 @@ body {
     text-transform: uppercase;
     text-wrap: balance;
     color: var(--texto-suave);
+  }
+  /* Domicilios: valor, pedido mínimo y zona, bajo la introducción. */
+  .encabezado-condiciones {
+    max-width: 26rem;
+    margin: 0.45rem auto 0;
+    font-size: 0.85rem;
+    color: var(--color-oro-300);
+    text-wrap: balance;
+  }
+  /* Carta general: invitación a pedir a domicilio. */
+  .encabezado-domicilio-enlace {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.75rem;
+    margin-top: 0.9rem;
+    padding: 0 1.1rem;
+    border: 1px solid var(--color-mostaza);
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-mostaza);
+  }
+  .encabezado-domicilio-enlace:hover {
+    background: var(--color-mostaza);
+    color: var(--color-tinta);
   }
 
   /* ---------- Categorías ---------- */
@@ -748,6 +779,8 @@ body {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+    /* Al saltar a un campo, que no quede tapado por la cabecera ni el pie pegados. */
+    scroll-padding-block: 6rem 10rem;
     border: 0;
     border-radius: 1.5rem 1.5rem 0 0;
     /* carbón 900 con un pelo de transparencia: Safari 26 en iPhone a veces no pinta completo un
@@ -788,7 +821,7 @@ body {
     z-index: 2;
     padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
     border-top: 1px solid var(--linea-oro-suave);
-    background: rgb(11 10 8 / 0.97);
+    background: var(--color-carbon-950);
   }
   @media (min-width: 640px) {
     .hoja-pie {
@@ -1272,6 +1305,52 @@ body {
     font-size: 0.8rem;
     text-align: center;
     color: var(--texto-tenue);
+  }
+  .pedido-pago a {
+    color: var(--color-mostaza);
+    text-decoration: underline;
+  }
+  /* Domicilios: productos y valor del domicilio antes del total. */
+  .pedido-cuentas {
+    display: grid;
+    gap: 0.35rem;
+    padding-top: 1rem;
+    font-size: 0.95rem;
+    color: var(--texto-suave);
+  }
+  .pedido-cuentas div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .pedido-cuentas dd {
+    color: var(--color-crema);
+  }
+  /* ¿Cómo vas a pagar? (el radio se ve: funciona igual en celulares viejos). */
+  .pago-opciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .pago-opcion {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.75rem;
+    padding: 0 1rem 0 0.8rem;
+    border: 1px solid var(--linea-oro);
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .pago-opcion input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--color-mostaza);
+  }
+  .pago-opcion:has(input:checked) {
+    border-color: var(--color-mostaza);
+    background: rgb(245 181 30 / 0.14);
   }
   .pedido-confirmar {
     display: flex;

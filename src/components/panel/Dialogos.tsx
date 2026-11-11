@@ -48,6 +48,8 @@ export function DialogoCobro({
   titulo,
   total,
   metodos,
+  sugerido = null,
+  nota = null,
   onConfirmar,
   onCerrar,
 }: {
@@ -55,6 +57,10 @@ export function DialogoCobro({
   titulo: string;
   total: number;
   metodos: string[];
+  /** Método que eligió el cliente al pedir (domicilios): se resalta. */
+  sugerido?: string | null;
+  /** Dato extra para la caja, p. ej. con cuánto paga y el cambio. */
+  nota?: string | null;
   onConfirmar: (metodo: string) => Promise<string | null>;
   onCerrar: () => void;
 }) {
@@ -63,13 +69,14 @@ export function DialogoCobro({
   return (
     <DialogoPanel abierto={abierto} onCerrar={onCerrar} titulo={titulo}>
       <p className="font-display text-4xl font-bold text-mostaza">{pesos(total)}</p>
-      <p className="panel-texto-suave">¿Cómo pagó?</p>
+      {nota ? <p className="font-semibold">{nota}</p> : null}
+      <p className="panel-texto-suave">{sugerido ? `¿Cómo pagó? El cliente dijo: ${sugerido}.` : "¿Cómo pagó?"}</p>
       <div className="metodos-pago">
         {metodos.map((metodo) => (
           <button
             key={metodo}
             type="button"
-            className="boton-panel"
+            className={`boton-panel ${metodo === sugerido ? "boton-panel-principal" : ""}`}
             disabled={enviando}
             onClick={async () => {
               setEnviando(true);

@@ -1,6 +1,8 @@
 import { Fragment } from "react";
-import type { CartaDTO, CategoriaDTO, MesaDTO, ProductoDTO } from "@/lib/carta";
-import { IconoBebida, IconoHamburguesa, IconoMas, IconoPapas } from "../Iconos";
+import Link from "next/link";
+import type { CartaDTO, CategoriaDTO, DestinoPedido, ProductoDTO } from "@/lib/carta";
+import { pesos } from "@/lib/formato";
+import { IconoBebida, IconoCasa, IconoHamburguesa, IconoMas, IconoPapas } from "../Iconos";
 import { BotonProducto } from "./BotonProducto";
 import { Diagnostico } from "./Diagnostico";
 import { Foto } from "./Foto";
@@ -30,9 +32,47 @@ export function anclas(categorias: CategoriaDTO[]): Map<string, string> {
   return resultado;
 }
 
-export function PaginaCarta({ carta, mesa }: { carta: CartaDTO; mesa: MesaDTO | null }) {
+/** Lo que se lee bajo el logo: cómo pedir desde aquí. */
+function Introduccion({ carta, destino }: { carta: CartaDTO; destino: DestinoPedido | null }) {
+  if (!destino) {
+    return (
+      <>
+        <p className="encabezado-intro">Para pedir en el local, escanea el código QR de tu mesa</p>
+        {carta.negocio.domicilios ? (
+          <Link href="/domicilio" className="encabezado-domicilio-enlace">
+            <IconoCasa className="size-4" />
+            ¿Estás en casa? Pide a domicilio
+          </Link>
+        ) : null}
+      </>
+    );
+  }
+  if (destino.tipo === "mesa") {
+    return (
+      <p className="encabezado-intro">
+        {carta.negocio.recibiendoPedidos
+          ? "Elige, arma tu pedido y envíalo desde aquí"
+          : "En este momento no estamos recibiendo pedidos por el QR: pide ayuda al personal"}
+      </p>
+    );
+  }
+  const { domicilio } = destino;
+  if (!domicilio.activo) return <p className="encabezado-intro">En este momento no estamos tomando domicilios. Vuelve más tarde</p>;
+  const condiciones = [
+    domicilio.costo === null ? "Domicilio: te confirmamos el valor" : domicilio.costo === 0 ? "Domicilio gratis" : `Domicilio ${pesos(domicilio.costo)}`,
+    domicilio.minimo > 0 ? `pedido mínimo ${pesos(domicilio.minimo)}` : null,
+  ].filter(Boolean);
+  return (
+    <>
+      <p className="encabezado-intro">Arma tu pedido y te lo llevamos a tu casa</p>
+      <p className="encabezado-condiciones">{condiciones.join(" · ")}</p>
+      {domicilio.zona ? <p className="encabezado-condiciones">Llevamos a: {domicilio.zona}</p> : null}
+    </>
+  );
+}
+
+export function PaginaCarta({ carta, destino }: { carta: CartaDTO; destino: DestinoPedido | null }) {
   const ids = anclas(carta.categorias);
-  const conPedidos = mesa !== null && carta.negocio.recibiendoPedidos;
   return (
     <>
       <Diagnostico />
@@ -46,19 +86,18 @@ export function PaginaCarta({ carta, mesa }: { carta: CartaDTO; mesa: MesaDTO | 
           <img src="/img/logo-roast-446.webp" alt={carta.negocio.nombre} width={446} height={233} className="encabezado-logo" fetchPriority="high" />
           <span className="encabezado-menu">Menú</span>
         </h1>
-        {mesa ? (
+        {destino?.tipo === "mesa" ? (
           <p className="encabezado-mesa">
-            <span>Mesa {mesa.numero}</span>
-            {mesa.nombre ? <span className="text-crema/70"> · {mesa.nombre}</span> : null}
+            <span>Mesa {destino.mesa.numero}</span>
+            {destino.mesa.nombre ? <span className="text-crema/70"> · {destino.mesa.nombre}</span> : null}
+          </p>
+        ) : destino?.tipo === "domicilio" ? (
+          <p className="encabezado-mesa">
+            <IconoCasa className="size-4" />
+            <span>A domicilio</span>
           </p>
         ) : null}
-        <p className="encabezado-intro">
-          {!mesa
-            ? "Para pedir, escanea el código QR de tu mesa"
-            : conPedidos
-              ? "Elige, arma tu pedido y envíalo desde aquí"
-              : "En este momento no estamos recibiendo pedidos por el QR: pide ayuda al personal"}
-        </p>
+        <Introduccion carta={carta} destino={destino} />
       </header>
       <NavCategorias categorias={carta.categorias.map((c) => ({ id: ids.get(c.id)!, nombre: c.nombre }))} />
       <main id="menu" tabIndex={-1} className="pb-28 outline-none">

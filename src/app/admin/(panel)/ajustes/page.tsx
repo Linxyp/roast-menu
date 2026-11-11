@@ -27,6 +27,11 @@ export default async function PaginaAjustes() {
             direccion: ajustes.direccion,
             horario: ajustes.horario,
             instagram: ajustes.instagram,
+            domiciliosActivos: ajustes.domiciliosActivos,
+            costoDomicilio: ajustes.costoDomicilio,
+            pedidoMinimoDomicilio: ajustes.pedidoMinimoDomicilio,
+            zonaDomicilio: ajustes.zonaDomicilio,
+            telefonoNegocio: ajustes.telefonoNegocio,
           }}
         />
       ) : null}

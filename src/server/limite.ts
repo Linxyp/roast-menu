@@ -13,6 +13,9 @@ export const LIMITES = {
   pedidoPorMesa: { limite: 30, segundos: 10 * 60 },
   // Holgado: con el wifi del restaurante, todos los celulares salen con la misma IP.
   pedidoPorIp: { limite: 60, segundos: 10 * 60 },
+  // Domicilios: desde una casa no se piden muchos seguidos; frena pedidos falsos en masa.
+  domicilioPorIp: { limite: 8, segundos: 10 * 60 },
+  domicilioPorTelefono: { limite: 5, segundos: 10 * 60 },
 } as const;
 
 export async function contarIntento(clave: string, regla: { limite: number; segundos: number }): Promise<boolean> {

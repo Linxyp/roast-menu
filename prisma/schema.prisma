@@ -25,6 +25,12 @@ enum Rol {
 
 /// Camino del pedido en cocina y servicio. El pago va aparte (pagadoEn): se puede cobrar
 /// antes o después de entregar. Un pedido se cierra al estar ENTREGADO y pagado, o CANCELADO.
+/// De dónde viene el pedido: el QR de una mesa o el QR de domicilios.
+enum TipoPedido {
+  MESA
+  DOMICILIO
+}
+
 enum EstadoPedido {
   NUEVO
   PREPARANDO
@@ -202,11 +208,23 @@ model Pedido {
   /// Día de operación en Colombia; el número reinicia cada día (#1, #2…).
   fecha         DateTime     @db.Date
   numero        Int
+  tipo          TipoPedido   @default(MESA)
   mesaId        String?
   mesa          Mesa?        @relation(fields: [mesaId], references: [id], onDelete: SetNull)
-  mesaNumero    Int
+  /// Número de la mesa; null en los domicilios.
+  mesaNumero    Int?
   cliente       String
   nota          String?
+  /// Domicilio: a quién y a dónde se lleva (null en los pedidos de mesa).
+  telefono      String?
+  direccion     String?
+  barrio        String?
+  referencia    String?
+  /// Cómo dijo el cliente que va a pagar y, en efectivo, con cuánto (para llevar el cambio).
+  pagoPreferido String?
+  pagaCon       Int?
+  /// Valor del domicilio ya sumado al total; null = todavía por confirmar.
+  costoEnvio    Int?
   estado        EstadoPedido @default(NUEVO)
   total         Int
   metodoPago    String?
@@ -250,18 +268,27 @@ model ContadorPedidos {
 // ---------------------------------------------------------------------
 
 model Ajustes {
-  id                Int      @id @default(1)
-  nombreNegocio     String   @default("ROAST Hamburguesas Artesanales")
-  pieRecibo         String   @default("¡Gracias por tu visita!")
+  id                    Int      @id @default(1)
+  nombreNegocio         String   @default("ROAST Hamburguesas Artesanales")
+  pieRecibo             String   @default("¡Gracias por tu visita!")
   /// Ancho del papel de la impresora de recibos: 58 u 80 mm.
-  anchoRecibo       Int      @default(80)
-  metodosPago       String[] @default(["Efectivo", "Nequi", "Daviplata", "Tarjeta"])
+  anchoRecibo           Int      @default(80)
+  metodosPago           String[] @default(["Efectivo", "Nequi", "Daviplata", "Tarjeta"])
   /// Pausa los pedidos desde el QR (la carta se sigue viendo).
-  recibiendoPedidos Boolean  @default(true)
-  direccion         String   @default("")
-  horario           String   @default("")
-  instagram         String   @default("")
-  actualizadoEn     DateTime @updatedAt
+  recibiendoPedidos     Boolean  @default(true)
+  direccion             String   @default("")
+  horario               String   @default("")
+  instagram             String   @default("")
+  /// Pedidos a domicilio desde su propio QR.
+  domiciliosActivos     Boolean  @default(true)
+  /// Valor del domicilio; null = se confirma con el cliente y se fija en cada pedido desde el panel.
+  costoDomicilio        Int?
+  pedidoMinimoDomicilio Int      @default(0)
+  /// Hasta dónde llegan (lo ve el cliente).
+  zonaDomicilio         String   @default("")
+  /// Celular o WhatsApp del restaurante para dudas de los domicilios.
+  telefonoNegocio       String   @default("")
+  actualizadoEn         DateTime @updatedAt
 }
 
 /// Límite de intentos por ventana de tiempo (ingreso al panel, pedidos por mesa).

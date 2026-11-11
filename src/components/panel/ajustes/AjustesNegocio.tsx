@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { guardarAjustesNegocio } from "@/app/admin/acciones";
@@ -13,12 +14,25 @@ interface Datos {
   direccion: string;
   horario: string;
   instagram: string;
+  domiciliosActivos: boolean;
+  costoDomicilio: number | null;
+  pedidoMinimoDomicilio: number;
+  zonaDomicilio: string;
+  telefonoNegocio: string;
+}
+
+/** «4.000», «4000» o «$ 4.000» → 4000; vacío → null. */
+function aPesos(texto: string): number | null {
+  const digitos = texto.replace(/\D/g, "");
+  return digitos ? Number(digitos) : null;
 }
 
 export function AjustesNegocio({ inicial }: { inicial: Datos }) {
   const router = useRouter();
   const [datos, setDatos] = useState(inicial);
   const [metodos, setMetodos] = useState(inicial.metodosPago.join("\n"));
+  const [costo, setCosto] = useState(inicial.costoDomicilio === null ? "" : String(inicial.costoDomicilio));
+  const [minimo, setMinimo] = useState(inicial.pedidoMinimoDomicilio ? String(inicial.pedidoMinimoDomicilio) : "");
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
   const [guardando, setGuardando] = useState(false);
   const fijar = (cambios: Partial<Datos>) => setDatos((d) => ({ ...d, ...cambios }));
@@ -31,6 +45,8 @@ export function AjustesNegocio({ inicial }: { inicial: Datos }) {
         setGuardando(true);
         const r = await guardarAjustesNegocio({
           ...datos,
+          costoDomicilio: aPesos(costo),
+          pedidoMinimoDomicilio: aPesos(minimo) ?? 0,
           metodosPago: metodos
             .split("\n")
             .map((m) => m.trim())
@@ -95,6 +111,57 @@ export function AjustesNegocio({ inicial }: { inicial: Datos }) {
         </label>
         <textarea id="a-metodos" rows={4} value={metodos} onChange={(e) => setMetodos(e.target.value)} />
       </div>
+      <fieldset className="grid gap-4 rounded-xl border border-oro-500/25 p-3">
+        <legend className="px-1 font-semibold">Domicilios</legend>
+        <label className="interruptor">
+          <input type="checkbox" checked={datos.domiciliosActivos} onChange={(e) => fijar({ domiciliosActivos: e.target.checked })} />
+          Recibir pedidos a domicilio desde su QR
+        </label>
+        <div className="fila-campos">
+          <div className="campo">
+            <label htmlFor="a-costo-domicilio">
+              Valor del domicilio <span className="campo-opcional">(vacío: se confirma en cada pedido; 0: gratis)</span>
+            </label>
+            <input id="a-costo-domicilio" type="text" inputMode="numeric" placeholder="Ej.: 4000" value={costo} onChange={(e) => setCosto(e.target.value)} />
+          </div>
+          <div className="campo">
+            <label htmlFor="a-minimo-domicilio">
+              Pedido mínimo <span className="campo-opcional">(vacío: sin mínimo)</span>
+            </label>
+            <input id="a-minimo-domicilio" type="text" inputMode="numeric" placeholder="Ej.: 20000" value={minimo} onChange={(e) => setMinimo(e.target.value)} />
+          </div>
+        </div>
+        <div className="fila-campos">
+          <div className="campo">
+            <label htmlFor="a-zona-domicilio">
+              Hasta dónde llevan <span className="campo-opcional">(lo ve el cliente)</span>
+            </label>
+            <input
+              id="a-zona-domicilio"
+              type="text"
+              maxLength={160}
+              placeholder="Ej.: casco urbano"
+              value={datos.zonaDomicilio}
+              onChange={(e) => fijar({ zonaDomicilio: e.target.value })}
+            />
+          </div>
+          <div className="campo">
+            <label htmlFor="a-telefono-negocio">
+              Celular o WhatsApp del restaurante <span className="campo-opcional">(para dudas del cliente)</span>
+            </label>
+            <input
+              id="a-telefono-negocio"
+              type="tel"
+              maxLength={30}
+              value={datos.telefonoNegocio}
+              onChange={(e) => fijar({ telefonoNegocio: e.target.value })}
+            />
+          </div>
+        </div>
+        <Link href="/admin/mesas/qr?domicilio=1" className="boton-texto justify-self-start px-0">
+          Ver e imprimir el QR de domicilios
+        </Link>
+      </fieldset>
       {mensaje ? (
         <p className={mensaje.ok ? "mensaje-exito" : "mensaje-error"} role={mensaje.ok ? "status" : "alert"}>
           {mensaje.texto}

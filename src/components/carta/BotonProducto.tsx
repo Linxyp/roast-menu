@@ -5,8 +5,8 @@ import { usePedido } from "../pedido/ProveedorPedido";
 
 /** Abre el producto: en la mesa para armarlo y agregarlo; sin mesa, para ver opciones y precios. */
 export function BotonProducto({ productoId, nombre, agotado, armable }: { productoId: string; nombre: string; agotado: boolean; armable: boolean }) {
-  const { abrirProducto, conMesa } = usePedido();
-  if (!conMesa) {
+  const { abrirProducto, puedePedir } = usePedido();
+  if (!puedePedir) {
     if (!armable) return null;
     return (
       <button type="button" className="boton-secundario w-full" aria-haspopup="dialog" data-producto={productoId} onClick={() => abrirProducto(productoId)}>

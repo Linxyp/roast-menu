@@ -113,6 +113,13 @@ export async function marcarImpreso(id: string) {
   });
 }
 
+export async function fijarValorDomicilio(id: string, valor: number) {
+  return accion(undefined, ["/admin/ventas"], async () => {
+    await pedidos.fijarCostoEnvio(id, valor);
+    return null;
+  });
+}
+
 export async function cambiarRecepcionPedidos(recibiendo: boolean) {
   return accion(undefined, ["/admin", "/admin/ajustes"], async () => {
     await cambiarRecepcion(recibiendo);

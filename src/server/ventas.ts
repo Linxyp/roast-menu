@@ -11,7 +11,8 @@ export interface ResumenVentas {
   promedio: number;
   porMetodo: { metodo: string; total: number; pedidos: number }[];
   porProducto: { nombre: string; unidades: number; total: number }[];
-  porMesa: { mesa: number; total: number; pedidos: number }[];
+  /** mesa null = domicilios. */
+  porMesa: { mesa: number | null; total: number; pedidos: number }[];
   lista: PedidoDTO[];
 }
 
@@ -30,7 +31,8 @@ export async function resumenVentas(desde: string, hasta: string): Promise<Resum
 
   const metodos = new Map<string, { total: number; pedidos: number }>();
   const productos = new Map<string, { unidades: number; total: number }>();
-  const mesas = new Map<number, { total: number; pedidos: number }>();
+  // null = domicilios.
+  const mesas = new Map<number | null, { total: number; pedidos: number }>();
   for (const p of pedidos) {
     const m = metodos.get(p.metodoPago ?? "Sin método") ?? { total: 0, pedidos: 0 };
     metodos.set(p.metodoPago ?? "Sin método", { total: m.total + p.total, pedidos: m.pedidos + 1 });
@@ -50,7 +52,7 @@ export async function resumenVentas(desde: string, hasta: string): Promise<Resum
     promedio: pedidos.length ? Math.round(total / pedidos.length) : 0,
     porMetodo: [...metodos].map(([metodo, v]) => ({ metodo, ...v })).sort((a, b) => b.total - a.total),
     porProducto: [...productos].map(([nombre, v]) => ({ nombre, ...v })).sort((a, b) => b.unidades - a.unidades),
-    porMesa: [...mesas].map(([mesa, v]) => ({ mesa, ...v })).sort((a, b) => a.mesa - b.mesa),
+    porMesa: [...mesas].map(([mesa, v]) => ({ mesa, ...v })).sort((a, b) => (a.mesa ?? Infinity) - (b.mesa ?? Infinity)),
     lista: pedidos.map(pedidoDTO),
   };
 }

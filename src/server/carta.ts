@@ -93,6 +93,7 @@ export async function cargarCarta(): Promise<CartaDTO> {
     negocio: {
       nombre: ajustes.nombreNegocio,
       recibiendoPedidos: ajustes.recibiendoPedidos,
+      domicilios: ajustes.recibiendoPedidos && ajustes.domiciliosActivos,
       direccion: ajustes.direccion,
       horario: ajustes.horario,
       instagram: ajustes.instagram,

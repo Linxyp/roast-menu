@@ -72,6 +72,8 @@ export interface CategoriaDTO {
 export interface NegocioDTO {
   nombre: string;
   recibiendoPedidos: boolean;
+  /** Se pueden pedir domicilios ahora (para invitar desde la carta general). */
+  domicilios: boolean;
   direccion: string;
   horario: string;
   instagram: string;
@@ -88,6 +90,21 @@ export interface MesaDTO {
   numero: number;
   nombre: string | null;
 }
+
+/** Condiciones de los domicilios que ve el cliente en /domicilio. */
+export interface DomicilioDTO {
+  /** Se pueden pedir domicilios ahora (también respeta la pausa general de pedidos). */
+  activo: boolean;
+  /** Valor del domicilio; null = se confirma con el cliente. */
+  costo: number | null;
+  minimo: number;
+  zona: string;
+  telefono: string;
+  metodosPago: string[];
+}
+
+/** Desde dónde se pide: la mesa del QR o la página de domicilios. */
+export type DestinoPedido = { tipo: "mesa"; mesa: MesaDTO } | { tipo: "domicilio"; domicilio: DomicilioDTO };
 
 /** Precio más bajo con el que se puede pedir el producto («desde $15.900»). */
 export function precioDesde(producto: { niveles: { precio: number }[] }): number {

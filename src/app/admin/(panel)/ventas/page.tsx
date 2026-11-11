@@ -98,9 +98,9 @@ export default async function PaginaVentas({ searchParams }: { searchParams: Pro
         </section>
         <section className="caja" aria-labelledby="t-mesas">
           <h2 id="t-mesas" className="panel-subtitulo mb-3">
-            Por mesa
+            Por mesa y domicilios
           </h2>
-          <Tabla filas={resumen.porMesa.map((m) => [`Mesa ${m.mesa}`, String(m.pedidos), pesos(m.total)])} columnas={["Mesa", "Pedidos", "Total"]} />
+          <Tabla filas={resumen.porMesa.map((m) => [m.mesa === null ? "Domicilios" : `Mesa ${m.mesa}`, String(m.pedidos), pesos(m.total)])} columnas={["Dónde", "Pedidos", "Total"]} />
         </section>
       </div>
 
@@ -137,7 +137,7 @@ export default async function PaginaVentas({ searchParams }: { searchParams: Pro
                         #{p.numero}
                       </a>
                     </td>
-                    <td>{p.mesaNumero}</td>
+                    <td>{p.mesaNumero ?? "Domicilio"}</td>
                     <td>{p.cliente}</td>
                     <td>{p.metodoPago}</td>
                     <td className="numero">{pesos(p.total)}</td>

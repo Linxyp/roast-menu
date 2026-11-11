@@ -34,10 +34,10 @@ export default async function PaginaMesa({ params }: Props) {
     );
   }
   const carta = await cargarCarta();
-  const datosMesa = { codigo: mesa.codigo, numero: mesa.numero, nombre: mesa.nombre };
+  const destino = { tipo: "mesa", mesa: { codigo: mesa.codigo, numero: mesa.numero, nombre: mesa.nombre } } as const;
   return (
-    <ProveedorPedido carta={carta} mesa={datosMesa}>
-      <PaginaCarta carta={carta} mesa={datosMesa} />
+    <ProveedorPedido carta={carta} destino={destino}>
+      <PaginaCarta carta={carta} destino={destino} />
     </ProveedorPedido>
   );
 }

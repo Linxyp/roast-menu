@@ -2,23 +2,23 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { detallarCarrito, lineasParaEnviar } from "@/lib/carrito";
-import type { CartaDTO, MesaDTO } from "@/lib/carta";
+import type { CartaDTO, DestinoPedido } from "@/lib/carta";
 import { pesos, plural } from "@/lib/formato";
-import { NOMBRE_ESTADO, type EstadoPedido } from "@/lib/pedido";
+import { esEfectivo, NOMBRE_ESTADO, type EstadoPedido } from "@/lib/pedido";
 import { cotizar, tituloLinea } from "@/lib/precios";
 import { IconoBolsa, IconoFlecha, IconoReloj } from "../Iconos";
 import { crearAlmacen, useAlmacen } from "./almacen";
-import { ContenidoCarrito } from "./ContenidoCarrito";
+import { ContenidoCarrito, type Entrega } from "./ContenidoCarrito";
 import { Hoja } from "./Hoja";
-import { consultarPedido, MisPedidos } from "./MisPedidos";
+import { consultarPedido, MisPedidos, nombrePaso, rutaPedidos } from "./MisPedidos";
 import { Personalizador } from "./Personalizador";
 
 type HojaAbierta = { tipo: "producto"; productoId: string; lineaId?: string } | { tipo: "carrito" } | { tipo: "pedidos" } | null;
 
 interface ContextoPedido {
   abrirProducto: (productoId: string) => void;
-  /** Hay mesa: se puede pedir. Sin mesa la carta es solo de consulta. */
-  conMesa: boolean;
+  /** Desde la mesa o desde la página de domicilios se pide; en la carta general solo se consulta. */
+  puedePedir: boolean;
 }
 
 const Contexto = createContext<ContextoPedido | null>(null);
@@ -30,6 +30,8 @@ export function usePedido(): ContextoPedido {
 }
 
 const CLAVE_NOMBRE = "roast:nombre";
+const CLAVE_ENTREGA = "roast:entrega";
+const ENTREGA_VACIA: Entrega = { telefono: "", direccion: "", barrio: "", referencia: "", pago: "", pagaCon: "" };
 
 function nombreGuardado(): string {
   if (typeof window === "undefined") return "";
@@ -40,22 +42,47 @@ function nombreGuardado(): string {
   }
 }
 
+/** Datos de entrega del último domicilio (el cliente no los vuelve a escribir). */
+function entregaGuardada(): Entrega {
+  if (typeof window === "undefined") return ENTREGA_VACIA;
+  try {
+    const guardada = JSON.parse(localStorage.getItem(CLAVE_ENTREGA) ?? "null") as Partial<Record<keyof Entrega, unknown>> | null;
+    if (!guardada || typeof guardada !== "object") return ENTREGA_VACIA;
+    const texto = (valor: unknown) => (typeof valor === "string" ? valor : "");
+    return {
+      ...ENTREGA_VACIA,
+      telefono: texto(guardada.telefono),
+      direccion: texto(guardada.direccion),
+      barrio: texto(guardada.barrio),
+      referencia: texto(guardada.referencia),
+      pago: texto(guardada.pago),
+    };
+  } catch {
+    return ENTREGA_VACIA;
+  }
+}
+
 interface Props {
   carta: CartaDTO;
-  mesa: MesaDTO | null;
+  /** null = carta general, solo de consulta. */
+  destino: DestinoPedido | null;
   children: ReactNode;
 }
 
-export function ProveedorPedido({ carta, mesa, children }: Props) {
+export function ProveedorPedido({ carta, destino, children }: Props) {
   const productos = useMemo(() => new Map(carta.categorias.flatMap((c) => c.productos).map((p) => [p.id, p])), [carta]);
-  const almacen = useMemo(() => crearAlmacen(mesa?.codigo ?? "general", productos), [mesa, productos]);
+  // Cada mesa tiene su carrito; los domicilios, el suyo.
+  const clave = destino?.tipo === "mesa" ? destino.mesa.codigo : (destino?.tipo ?? "general");
+  const almacen = useMemo(() => crearAlmacen(clave, productos), [clave, productos]);
   const { lineas, pedidos } = useAlmacen(almacen);
   const detalle = useMemo(() => detallarCarrito(lineas, productos), [lineas, productos]);
+  const ruta = destino ? rutaPedidos(destino) : null;
 
   const [hoja, setHoja] = useState<HojaAbierta>(null);
   const [aviso, setAviso] = useState<{ texto: string; id: number } | null>(null);
-  // El formulario solo se pinta con la hoja abierta: leer aquí el nombre guardado no cambia el HTML inicial.
+  // Los formularios solo se pintan con la hoja abierta: leer aquí lo guardado no cambia el HTML inicial.
   const [cliente, setCliente] = useState(nombreGuardado);
+  const [entrega, setEntrega] = useState(entregaGuardada);
   const [nota, setNota] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +91,8 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
   const hojaActual = useRef<HojaAbierta>(null);
 
   useEffect(() => {
-    if (mesa) almacen.cargar();
-  }, [almacen, mesa]);
+    if (ruta) almacen.cargar();
+  }, [almacen, ruta]);
 
   useEffect(() => {
     hojaActual.current = hoja;
@@ -80,10 +107,10 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
   // Estado del último pedido enviado, para mostrarlo en la barra inferior.
   const ultimo = pedidos[0];
   useEffect(() => {
-    if (!mesa || !ultimo) return;
+    if (!ruta || !ultimo) return;
     let vigente = true;
     const actualizar = async () => {
-      const pedido = await consultarPedido(mesa.codigo, ultimo.id);
+      const pedido = await consultarPedido(ruta, ultimo.id);
       if (vigente) setUltimoEstado(pedido ? pedido.estado : null);
     };
     actualizar();
@@ -92,7 +119,7 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
       vigente = false;
       window.clearInterval(intervalo);
     };
-  }, [mesa, ultimo]);
+  }, [ruta, ultimo]);
 
   const abrir = useCallback((nueva: Exclude<HojaAbierta, null>) => {
     if (!hojaActual.current && document.activeElement instanceof HTMLElement) origenFoco.current = document.activeElement;
@@ -101,9 +128,9 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
 
   const cerrar = useCallback(() => {
     setHoja(null);
-    const destino = origenFoco.current;
+    const destinoFoco = origenFoco.current;
     origenFoco.current = null;
-    if (destino?.isConnected) requestAnimationFrame(() => destino.focus());
+    if (destinoFoco?.isConnected) requestAnimationFrame(() => destinoFoco.focus());
   }, []);
 
   // Ya cargó: si alguien tocó un producto antes (ver ToquesTempranos), se abre ahora.
@@ -122,8 +149,8 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
   }, []);
 
   const contexto = useMemo<ContextoPedido>(
-    () => ({ abrirProducto: (productoId) => abrir({ tipo: "producto", productoId }), conMesa: mesa !== null }),
-    [abrir, mesa],
+    () => ({ abrirProducto: (productoId) => abrir({ tipo: "producto", productoId }), puedePedir: ruta !== null }),
+    [abrir, ruta],
   );
 
   function cambiarCliente(valor: string) {
@@ -135,15 +162,42 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
     }
   }
 
+  function cambiarEntrega(cambios: Partial<Entrega>) {
+    setEntrega((actual) => {
+      const nueva = { ...actual, ...cambios };
+      try {
+        // Con cuánto paga cambia en cada pedido: no se guarda.
+        localStorage.setItem(CLAVE_ENTREGA, JSON.stringify({ ...nueva, pagaCon: "" }));
+      } catch {
+        // sin almacenamiento
+      }
+      return nueva;
+    });
+  }
+
   async function enviar() {
-    if (!mesa || enviando) return;
+    if (!destino || !ruta || enviando) return;
     setEnviando(true);
     setError(null);
+    const base = { cliente: cliente.trim(), nota: nota.trim() || undefined, items: lineasParaEnviar(lineas) };
+    const pagaCon = Number(entrega.pagaCon.replace(/\D/g, ""));
+    const cuerpo =
+      destino.tipo === "mesa"
+        ? base
+        : {
+            ...base,
+            telefono: entrega.telefono,
+            direccion: entrega.direccion.trim(),
+            barrio: entrega.barrio.trim(),
+            referencia: entrega.referencia.trim() || undefined,
+            pago: entrega.pago,
+            pagaCon: esEfectivo(entrega.pago) && pagaCon > 0 ? pagaCon : undefined,
+          };
     try {
-      const respuesta = await fetch(`/api/m/${mesa.codigo}/pedidos`, {
+      const respuesta = await fetch(ruta, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente: cliente.trim(), nota: nota.trim() || undefined, items: lineasParaEnviar(lineas) }),
+        body: JSON.stringify(cuerpo),
       });
       const datos = (await respuesta.json().catch(() => ({}))) as { id?: string; numero?: number; total?: number; error?: string };
       if (!respuesta.ok || !datos.id || datos.numero == null || datos.total == null) {
@@ -153,6 +207,7 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
       almacen.registrarPedido({ id: datos.id, numero: datos.numero, total: datos.total });
       almacen.vaciar();
       setNota("");
+      if (destino.tipo === "domicilio") cambiarEntrega({ pagaCon: "" });
       setUltimoEstado("NUEVO");
       setHoja({ tipo: "pedidos" });
     } catch {
@@ -165,12 +220,13 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
   const producto = hoja?.tipo === "producto" ? productos.get(hoja.productoId) : undefined;
   const lineaEditada = hoja?.tipo === "producto" && hoja.lineaId ? lineas.find((l) => l.id === hoja.lineaId) : undefined;
   const volverAlCarrito = () => setHoja({ tipo: "carrito" });
+  const recibiendo = destino?.tipo === "domicilio" ? destino.domicilio.activo : carta.negocio.recibiendoPedidos;
 
   return (
     <Contexto.Provider value={contexto}>
       {children}
 
-      {mesa ? (
+      {destino ? (
         <div className="barra-pedido">
           {detalle.unidades > 0 ? (
             <button
@@ -197,7 +253,7 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
               <IconoReloj className="size-5" />
               <span>
                 Pedido #{ultimo.numero}
-                {ultimoEstado ? ` · ${NOMBRE_ESTADO[ultimoEstado]}` : ""}
+                {ultimoEstado ? ` · ${destino.tipo === "domicilio" ? nombrePaso(ultimoEstado, true) : NOMBRE_ESTADO[ultimoEstado]}` : ""}
               </span>
               <span className="barra-seguimiento-ver">Ver</span>
             </button>
@@ -214,7 +270,7 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
           <Personalizador
             key={lineaEditada?.id ?? producto.id}
             producto={producto}
-            modo={!mesa ? "ver" : lineaEditada ? "editar" : "agregar"}
+            modo={!destino ? "ver" : lineaEditada ? "editar" : "agregar"}
             inicial={lineaEditada ? { seleccion: lineaEditada.seleccion, cantidad: lineaEditada.cantidad, nota: lineaEditada.nota } : undefined}
             tituloId="titulo-producto"
             onCerrar={lineaEditada ? volverAlCarrito : cerrar}
@@ -234,15 +290,17 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
         ) : null}
       </Hoja>
 
-      {mesa ? (
+      {destino ? (
         <>
           <Hoja abierta={hoja?.tipo === "carrito"} onCerrar={cerrar} etiquetaId="titulo-carrito">
             <ContenidoCarrito
-              mesa={mesa}
+              destino={destino}
               detalle={detalle}
               cliente={cliente}
+              entrega={entrega}
               nota={nota}
               onCliente={cambiarCliente}
+              onEntrega={cambiarEntrega}
               onNota={setNota}
               onCantidad={almacen.cambiarCantidad}
               onQuitar={almacen.quitar}
@@ -252,11 +310,11 @@ export function ProveedorPedido({ carta, mesa, children }: Props) {
               onCerrar={cerrar}
               enviando={enviando}
               error={error}
-              recibiendo={carta.negocio.recibiendoPedidos}
+              recibiendo={recibiendo}
             />
           </Hoja>
           <Hoja abierta={hoja?.tipo === "pedidos"} onCerrar={cerrar} etiquetaId="titulo-mis-pedidos">
-            <MisPedidos mesa={mesa} pedidos={pedidos} onCerrar={cerrar} onPedirMas={cerrar} />
+            <MisPedidos destino={destino} pedidos={pedidos} onCerrar={cerrar} onPedirMas={cerrar} />
           </Hoja>
         </>
       ) : null}

@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { cambiarEstadoPedido, cambiarRecepcionPedidos, cobrarPedidos, marcarImpreso } from "@/app/admin/acciones";
+import { cambiarEstadoPedido, cambiarRecepcionPedidos, cobrarPedidos, fijarValorDomicilio, marcarImpreso } from "@/app/admin/acciones";
 import { pesos } from "@/lib/formato";
-import type { EstadoPedido, PedidoDTO } from "@/lib/pedido";
+import { lugarPedido, type EstadoPedido, type PedidoDTO } from "@/lib/pedido";
 import { DialogoCobro, DialogoConfirmar } from "./Dialogos";
 import { useVivo } from "./PanelVivo";
 import { TarjetaPedido } from "./TarjetaPedido";
@@ -178,6 +178,7 @@ export function TableroPedidos({ inicial }: { inicial: DatosTablero }) {
                 onCobrar={() => setCobrando(pedido)}
                 onCancelar={() => setCancelando(pedido)}
                 onImprimir={() => imprimir(pedido)}
+                onFijarValor={(valor) => ejecutar(pedido.id, () => fijarValorDomicilio(pedido.id, valor))}
               />
             ))}
           </section>
@@ -186,9 +187,15 @@ export function TableroPedidos({ inicial }: { inicial: DatosTablero }) {
 
       <DialogoCobro
         abierto={cobrando !== null}
-        titulo={cobrando ? `Cobrar pedido #${cobrando.numero} · Mesa ${cobrando.mesaNumero}` : "Cobrar"}
+        titulo={cobrando ? `Cobrar pedido #${cobrando.numero} · ${lugarPedido(cobrando)}` : "Cobrar"}
         total={cobrando?.total ?? 0}
         metodos={datos.metodosPago}
+        sugerido={cobrando?.pagoPreferido ?? null}
+        nota={
+          cobrando?.pagaCon != null
+            ? `Trae ${pesos(cobrando.pagaCon)}${cobrando.pagaCon > cobrando.total ? `: cambio ${pesos(cobrando.pagaCon - cobrando.total)}` : ""}`
+            : null
+        }
         onCerrar={() => setCobrando(null)}
         onConfirmar={async (metodo) => {
           if (!cobrando) return null;

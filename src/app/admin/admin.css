@@ -451,6 +451,60 @@
     font-style: italic;
     color: var(--color-oro-200);
   }
+  /* Domicilios: a dónde se lleva, cómo paga y atajos para llamar o escribir. */
+  .pedido-domicilio {
+    color: var(--color-mostaza);
+  }
+  .pedido-entrega {
+    display: grid;
+    gap: 0.3rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgb(245 181 30 / 0.35);
+    border-radius: 0.6rem;
+    background: rgb(245 181 30 / 0.06);
+    font-size: 0.88rem;
+  }
+  .pedido-entrega-direccion {
+    font-weight: 700;
+  }
+  .pedido-entrega-dato {
+    color: var(--texto-suave);
+  }
+  .pedido-entrega-contacto {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
+  }
+  .pedido-valor-domicilio {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.3rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+  }
+  .pedido-valor-domicilio-pendiente {
+    display: grid;
+    padding: 0.6rem 0.7rem;
+    border: 1px dashed var(--color-alerta);
+    border-radius: 0.6rem;
+  }
+  .pedido-valor-domicilio-pendiente label {
+    font-weight: 600;
+    color: var(--color-alerta);
+  }
+  .pedido-valor-campo {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.4rem;
+    padding: 0 0.7rem;
+    border: 1px solid rgb(247 240 227 / 0.24);
+    border-radius: 0.6rem;
+    background: var(--color-carbon-950);
+    color: var(--color-crema);
+  }
   .pedido-nota-general {
     padding: 0.5rem 0.7rem;
     border-left: 3px solid var(--color-oro-400);

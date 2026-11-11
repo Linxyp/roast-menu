@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { BotonImprimir } from "@/components/panel/BotonImprimir";
-import { CabeceraPedido, ItemsRecibo, Recibo } from "@/components/panel/Recibo";
+import { CabeceraPedido, ItemsRecibo, PagoRecibo, Recibo, ValoresDomicilio } from "@/components/panel/Recibo";
 import { pesos } from "@/lib/formato";
 import { leerAjustes } from "@/server/ajustes";
 import { requerirPagina } from "@/server/auth/acceso";
@@ -27,11 +27,12 @@ export default async function ComandaPedido({ params }: { params: Promise<{ id: 
         <ItemsRecibo pedido={pedido} />
         {pedido.nota ? <p className="recibo-nota">Comentario: {pedido.nota}</p> : null}
         <hr className="recibo-separador" />
+        {pedido.tipo === "DOMICILIO" ? <ValoresDomicilio pedido={pedido} /> : null}
         <div className="recibo-total">
           <span>TOTAL</span>
           <span>{pesos(pedido.total)}</span>
         </div>
-        <p className="recibo-centro">{pedido.pagadoEn ? `PAGADO · ${pedido.metodoPago ?? ""}` : "POR COBRAR"}</p>
+        <PagoRecibo pedido={pedido} />
       </Recibo>
     </main>
   );

@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function Inicio() {
   const carta = await cargarCarta();
   return (
-    <ProveedorPedido carta={carta} mesa={null}>
-      <PaginaCarta carta={carta} mesa={null} />
+    <ProveedorPedido carta={carta} destino={null}>
+      <PaginaCarta carta={carta} destino={null} />
     </ProveedorPedido>
   );
 }

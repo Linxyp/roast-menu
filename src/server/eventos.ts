@@ -10,7 +10,8 @@ export interface EventoPedido {
   tipo: "creado" | "actualizado";
   pedidoId: string;
   numero: number;
-  mesaNumero: number;
+  /** null en los domicilios. */
+  mesaNumero: number | null;
   estado: string;
 }
 

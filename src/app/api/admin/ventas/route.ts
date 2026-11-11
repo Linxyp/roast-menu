@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         fechaCorta(p.pagadoEn!),
         hora(p.pagadoEn!),
         p.numero,
-        p.mesaNumero,
+        p.mesaNumero ?? "Domicilio",
         p.cliente,
         p.items.map((i) => `${i.cantidad} x ${i.nombre}`).join(" | "),
         p.metodoPago ?? "",

@@ -1,9 +1,10 @@
-# ROAST Hamburguesas Artesanales — carta QR y pedidos por mesa
+# ROAST Hamburguesas Artesanales — carta QR, pedidos por mesa y a domicilio
 
 Sistema del restaurante: cada mesa tiene su código QR; el cliente ve la carta con fotos, descripción
 y precios, arma su pedido (carne, toppings, cantidades, indicaciones) y lo envía. El pedido llega al
 instante al panel, sale la comanda para la cocina y la caja cobra sabiendo exactamente cuánto paga
-cada cliente y cada mesa. Todo lo de la carta se edita desde el panel.
+cada cliente y cada mesa. Con el QR de domicilios el cliente pide desde su casa con sus datos de
+entrega. Todo lo de la carta se edita desde el panel.
 
 Next.js 16 (App Router) + React 19 + TypeScript + Tailwind 4, PostgreSQL 16 con Prisma 7.
 
@@ -12,12 +13,13 @@ Next.js 16 (App Router) + React 19 + TypeScript + Tailwind 4, PostgreSQL 16 con 
 | Dirección | Para quién | Qué hace |
 | --- | --- | --- |
 | `/m/<código>` | Cliente (QR de la mesa) | Carta, armar productos, carrito, enviar y seguir el pedido («Mis pedidos») |
-| `/` | Cualquiera | Carta de solo consulta (sin pedir) |
+| `/domicilio` | Cliente (QR de domicilios) | Lo mismo, con los datos de entrega: celular, dirección, barrio y cómo paga |
+| `/` | Cualquiera | Carta de solo consulta (sin pedir), con enlace para pedir a domicilio |
 | `/admin` | Personal | **Pedidos** en vivo (sonido, comandas, preparar → listo → entregado → cobrar) |
-| `/admin/mesas` | Personal | Cuenta de cada mesa, cobrar la mesa completa; agregar/quitar mesas y **QR imprimibles** |
+| `/admin/mesas` | Personal | Cuenta de cada mesa, cobrar la mesa completa; agregar/quitar mesas y **QR imprimibles** (también el de domicilios) |
 | `/admin/carta` | Administrador | Productos, fotos, precios, elecciones (carne…), toppings, agotados, categorías |
 | `/admin/ventas` | Personal | Lo cobrado por día o rango: por método de pago, producto y mesa; descarga CSV (Excel) |
-| `/admin/ajustes` | Administrador | Negocio, métodos de pago, papel de la impresora, usuarios del panel |
+| `/admin/ajustes` | Administrador | Negocio, métodos de pago, domicilios, papel de la impresora, usuarios del panel |
 
 Roles: **Administrador** (todo) y **Personal** (pedidos, mesas, cobros y ventas; no edita la carta).
 
@@ -29,6 +31,17 @@ Roles: **Administrador** (todo) y **Personal** (pedidos, mesas, cobros y ventas;
 - Cada pedido guarda una copia de lo pedido (nombres, detalles y precios): cambiar la carta después
   no altera pedidos ni ventas pasadas.
 - El cobro va aparte del estado en cocina. Un pedido sale del tablero cuando está entregado y pagado.
+
+### Domicilios
+
+- El cliente escanea el QR de domicilios (redes, volantes, empaques) y pide desde su casa: nombre,
+  celular, dirección, barrio, indicaciones, cómo va a pagar y, si es en efectivo, con cuánto paga.
+- El valor del domicilio sale de Ajustes → Domicilios. Si se deja vacío, cada pedido llega «por
+  confirmar»: el panel lo fija en la tarjeta del pedido antes de cobrar (con zonas distintas, por
+  ejemplo). También hay pedido mínimo, zona de cobertura e interruptor para pausar los domicilios.
+- La tarjeta del pedido trae la dirección, el botón para llamar o escribir por WhatsApp y el cambio
+  que hay que llevar. La comanda impresa lleva los mismos datos.
+- Mesas y domicilios comparten la numeración del día; en Ventas los domicilios salen aparte.
 
 ## Desarrollo
 
@@ -77,4 +90,6 @@ Se dejaron así sin inventar datos; todo se cambia desde el panel:
 - Salchipapa y mazorcada familiares: incluyen 2 toppings y no venden adicionales.
 - Qué bebida trae el combo y los sabores de «Productos Coca-Cola» (el cliente lo indica en la nota).
 - Métodos de pago (Efectivo, Nequi, Daviplata, Tarjeta), dirección, horario e Instagram.
+- Domicilios: valor del envío, pedido mínimo, zona de cobertura y WhatsApp del negocio
+  (Ajustes → Domicilios). Mientras tanto el valor del domicilio llega «por confirmar».
 - Fotos del perro y de las mazorcadas (se suben en Carta → Editar).

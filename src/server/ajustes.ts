@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import type { DomicilioDTO } from "@/lib/carta";
 import { db } from "./db";
 import { ErrorNegocio } from "./errores";
 
@@ -30,6 +31,11 @@ const esquemaAjustes = z.object({
     .trim()
     .max(40)
     .transform((v) => v.replace(/^@/, "")),
+  domiciliosActivos: z.boolean(),
+  costoDomicilio: z.number().int().min(0, "El valor del domicilio no puede ser negativo.").max(1_000_000).nullable(),
+  pedidoMinimoDomicilio: z.number().int().min(0, "El pedido mínimo no puede ser negativo.").max(5_000_000),
+  zonaDomicilio: z.string().trim().max(160, "La zona de domicilios es muy larga."),
+  telefonoNegocio: z.string().trim().max(30, "El teléfono es muy largo."),
 });
 
 export async function guardarAjustes(entrada: unknown) {
@@ -38,6 +44,19 @@ export async function guardarAjustes(entrada: unknown) {
   const datos = { ...resultado.data, metodosPago: [...new Set(resultado.data.metodosPago)] };
   await leerAjustes();
   await db.ajustes.update({ where: { id: 1 }, data: datos });
+}
+
+/** Condiciones de los domicilios para la página que ve el cliente (sin datos internos). */
+export async function datosDomicilio(): Promise<DomicilioDTO> {
+  const ajustes = await leerAjustes();
+  return {
+    activo: ajustes.recibiendoPedidos && ajustes.domiciliosActivos,
+    costo: ajustes.costoDomicilio,
+    minimo: ajustes.pedidoMinimoDomicilio,
+    zona: ajustes.zonaDomicilio,
+    telefono: ajustes.telefonoNegocio,
+    metodosPago: ajustes.metodosPago,
+  };
 }
 
 export async function cambiarRecepcion(recibiendoPedidos: boolean) {

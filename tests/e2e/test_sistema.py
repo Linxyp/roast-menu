@@ -253,7 +253,8 @@ def interruptor(pagina: Page, etiqueta: str, activo: bool) -> None:
 
 def armar(pagina: Page, producto: str, opciones=(), toppings=(), nota: str | None = None, boton="Armar y agregar") -> None:
     """Abre un producto en la carta de la mesa, lo arma y lo agrega al pedido."""
-    pagina.get_by_role("button", name=f"{boton} {producto}").click()
+    # Nombre exacto: «Salchipapa» no debe tomar también «Salchipapa familiar».
+    pagina.get_by_role("button", name=re.compile(rf"^{boton}\s+{re.escape(producto)}$")).click()
     hoja = pagina.locator("dialog[open]")
     expect(hoja).to_be_visible()
     for opcion in opciones:
@@ -507,6 +508,76 @@ def probar(navegador: Browser, mesas: dict[str, str]) -> None:
         kp.goto(f"{BASE}/admin/carta")
         expect(kp).to_have_url(re.compile(r"/admin\?aviso=permiso"))
         caja.close()
+
+    with paso("A domicilio: desde la carta general, el cliente pide con sus datos de entrega"):
+        casa = navegador.new_context(**CELULAR)
+        hp = vigilar(casa.new_page(), "cliente-casa")
+        hp.goto(BASE + "/")
+        hp.get_by_role("link", name=re.compile("Pide a domicilio")).tap()
+        expect(hp).to_have_url(f"{BASE}/domicilio")
+        expect(hp.get_by_text("Domicilio: te confirmamos el valor")).to_be_visible()
+        sin_desborde(hp, "domicilio")
+        accesibilidad(hp, "domicilio")
+        armar(hp, "Salchipapa", toppings=["Carne", "Pollo"])  # con 2 toppings: $22.900
+        armar(hp, "Productos Coca-Cola", boton="Agregar")  # $5.500 (precio cambiado más arriba)
+        hp.locator(".barra-pedido-boton").tap()
+        hoja = hp.locator("dialog[open]")
+        expect(hoja).to_contain_text("por confirmar")
+        hoja.get_by_role("button", name=re.compile("Enviar pedido")).tap()
+        expect(hoja.locator("#error-cliente")).to_be_visible()  # faltan los datos de entrega
+        hoja.get_by_label("Tu nombre").fill("Carlos")
+        hoja.get_by_label("Celular").fill("300 555 1234")
+        hoja.get_by_label("Dirección").fill("Calle 8 # 4-15, casa 2")
+        hoja.get_by_label("Barrio").fill("El Carmen")
+        hoja.get_by_label("Indicaciones para llegar").fill("Portón verde")
+        hoja.get_by_label("Efectivo").check()
+        hoja.get_by_label("¿Con cuánto pagas?").fill("50000")
+        sin_desborde(hp, "datos de entrega")
+        accesibilidad(hp, "datos de entrega")
+        hoja.get_by_role("button", name=re.compile("Enviar pedido")).tap()
+        expect(hp.get_by_role("heading", name="Mis pedidos")).to_be_visible()
+        seguimiento = hp.locator("article.seguimiento").first
+        expect(seguimiento).to_contain_text("En camino")
+        expect(seguimiento).to_contain_text("por confirmar")
+        hp.screenshot(path=CAPTURAS / "domicilio-cliente.png")
+
+    with paso("El panel recibe el domicilio: fija el valor, la comanda lleva la dirección y se cobra"):
+        menu(pp).get_by_role("link", name="Pedidos").click()
+        domicilio = pp.get_by_role("article", name=re.compile(r"^Pedido \d+, domicilio$"))
+        expect(domicilio).to_be_visible(timeout=15_000)
+        for texto in ["Carlos", "Calle 8 # 4-15, casa 2", "El Carmen", "Portón verde", "Paga con Efectivo", "trae $50.000", "300 555 1234"]:
+            expect(domicilio).to_contain_text(texto)
+        expect(domicilio.get_by_role("button", name="Cobrar", exact=True)).to_be_disabled()
+        domicilio.get_by_label(re.compile("Valor del domicilio")).fill("4000")
+        domicilio.get_by_role("button", name="Guardar").click()
+        expect(domicilio).to_contain_text("Domicilio $4.000")
+        expect(domicilio.locator(".pedido-total-panel")).to_have_text("$32.400")
+        pp.screenshot(path=CAPTURAS / "domicilio-panel.png")
+
+        domicilio.get_by_role("button", name=re.compile("Imprimir comanda")).click()
+        ruta = pp.locator("iframe[aria-hidden=true]").last.get_attribute("src")
+        comanda = vigilar(panel.new_page(), "comanda-domicilio")
+        comanda.goto(BASE + ruta)
+        for texto in ["DOMICILIO", "Carlos", "300 555 1234", "Calle 8 # 4-15, casa 2", "El Carmen", "Portón verde", "$4.000", "$32.400", "POR COBRAR · Efectivo", "cambio $17.600"]:
+            expect(comanda.locator(".recibo")).to_contain_text(texto)
+        comanda.screenshot(path=CAPTURAS / "comanda-domicilio.png", full_page=True)
+        comanda.close()
+
+        domicilio.get_by_role("button", name="Cobrar", exact=True).click()
+        dialogo = pp.locator("dialog[open]")
+        expect(dialogo).to_contain_text("El cliente dijo: Efectivo")
+        expect(dialogo).to_contain_text("cambio $17.600")
+        dialogo.get_by_role("button", name="Efectivo").click()
+        expect(domicilio.locator(".etiqueta-pagado")).to_be_visible()
+        expect(hp.locator("article.seguimiento").first).to_contain_text("$32.400", timeout=15_000)
+        casa.close()
+
+    with paso("El QR de domicilios se lee y abre la carta para pedir a domicilio"):
+        pp.goto(f"{BASE}/admin/mesas/qr?domicilio=1")
+        pp.add_script_tag(content=JSQR)
+        leido = pp.get_by_role("article", name="Código QR de domicilios").locator("svg").evaluate(LEER_QR)
+        assert leido == f"{BASE}/domicilio", leido
+        accesibilidad(pp, "QR de domicilios")
 
     with paso("El panel en un celular: menú abajo y nada se desborda"):
         movil = navegador.new_context(**CELULAR, storage_state=panel.storage_state())

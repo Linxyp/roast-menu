@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { fechaHora, pesos } from "@/lib/formato";
-import type { PedidoDTO } from "@/lib/pedido";
+import { fechaHora, formatearTelefono, pesos } from "@/lib/formato";
+import { lugarPedido, type PedidoDTO } from "@/lib/pedido";
 
 /** Encabezado y pie comunes de los recibos. */
 export function Recibo({ ancho, negocio, pie, children }: { ancho: number; negocio: string; pie: string; children: ReactNode }) {
@@ -51,12 +51,64 @@ export function CabeceraPedido({ pedido }: { pedido: PedidoDTO }) {
     <>
       <div className="recibo-fila recibo-grande">
         <span>#{pedido.numero}</span>
-        <span>MESA {pedido.mesaNumero}</span>
+        <span>{lugarPedido(pedido).toUpperCase()}</span>
       </div>
       <p>
         <strong>Cliente:</strong> {pedido.cliente}
       </p>
+      {pedido.tipo === "DOMICILIO" ? (
+        <>
+          <p>
+            <strong>Tel.:</strong> {formatearTelefono(pedido.telefono ?? "")}
+          </p>
+          <p>
+            <strong>Dirección:</strong> {pedido.direccion}
+          </p>
+          <p>
+            <strong>Barrio:</strong> {pedido.barrio}
+          </p>
+          {pedido.referencia ? (
+            <p>
+              <strong>Ref.:</strong> {pedido.referencia}
+            </p>
+          ) : null}
+        </>
+      ) : null}
       <p>{fechaHora(pedido.creadoEn)}</p>
+    </>
+  );
+}
+
+/** Domicilios: productos y valor del domicilio antes del total. */
+export function ValoresDomicilio({ pedido }: { pedido: PedidoDTO }) {
+  const envio = pedido.costoEnvio;
+  return (
+    <>
+      <div className="recibo-fila">
+        <span>Productos</span>
+        <span>{pesos(pedido.total - (envio ?? 0))}</span>
+      </div>
+      <div className="recibo-fila">
+        <span>Domicilio</span>
+        <span>{envio === null ? "por confirmar" : envio === 0 ? "gratis" : pesos(envio)}</span>
+      </div>
+    </>
+  );
+}
+
+/** Cómo y con cuánto paga: lo que el domiciliario necesita para llevar el cambio. */
+export function PagoRecibo({ pedido }: { pedido: PedidoDTO }) {
+  if (pedido.pagadoEn) return <p className="recibo-centro">PAGADO · {pedido.metodoPago ?? ""}</p>;
+  if (pedido.tipo !== "DOMICILIO") return <p className="recibo-centro">POR COBRAR</p>;
+  return (
+    <>
+      <p className="recibo-centro">POR COBRAR · {pedido.pagoPreferido}</p>
+      {pedido.pagaCon !== null ? (
+        <p className="recibo-centro">
+          Trae {pesos(pedido.pagaCon)}
+          {pedido.pagaCon > pedido.total ? ` · cambio ${pesos(pedido.pagaCon - pedido.total)}` : ""}
+        </p>
+      ) : null}
     </>
   );
 }

@@ -7,6 +7,11 @@ export function pesos(valor: number): string {
   return `${entero < 0 ? "-" : ""}$${cifras}`;
 }
 
+/** «3001234567» → «300 123 4567» (y los fijos «6041234567» → «604 123 4567»). */
+export function formatearTelefono(telefono: string): string {
+  return /^\d{10}$/.test(telefono) ? `${telefono.slice(0, 3)} ${telefono.slice(3, 6)} ${telefono.slice(6)}` : telefono;
+}
+
 export function plural(cantidad: number, singular: string, varios: string): string {
   return cantidad === 1 ? singular : varios;
 }

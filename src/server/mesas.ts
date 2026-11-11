@@ -26,6 +26,11 @@ export function urlMesa(codigo: string): string {
   return `${base}/m/${codigo}`;
 }
 
+/** Dirección del QR de domicilios. */
+export function urlDomicilio(): string {
+  return `${(process.env.APP_URL || "http://localhost:3520").replace(/\/+$/, "")}/domicilio`;
+}
+
 export async function listarMesas(): Promise<MesaResumen[]> {
   const mesas = await db.mesa.findMany({
     orderBy: { numero: "asc" },

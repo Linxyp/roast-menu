@@ -1,11 +1,13 @@
 import "server-only";
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
-import { diaColombia, fechaDia } from "@/lib/formato";
+import { diaColombia, fechaDia, pesos } from "@/lib/formato";
 import {
   MAX_CANTIDAD,
   MAX_LINEAS,
   TRANSICIONES,
+  esEfectivo,
+  normalizarTelefono,
   type EstadoPedido,
   type PedidoClienteDTO,
   type PedidoDTO,
@@ -35,6 +37,25 @@ const esquemaPedido = z.object({
     .max(MAX_LINEAS, "Son demasiados productos en un solo pedido."),
 });
 
+const esquemaDomicilio = esquemaPedido.extend({
+  telefono: z
+    .string()
+    .max(25)
+    .transform((texto, ctx) => {
+      const telefono = normalizarTelefono(texto);
+      if (!telefono) {
+        ctx.addIssue({ code: "custom", message: "Escribe un celular de 10 dígitos, por ejemplo 3001234567." });
+        return z.NEVER;
+      }
+      return telefono;
+    }),
+  direccion: z.string().trim().min(5, "Escribe la dirección completa (calle, número, casa o apartamento).").max(120, "La dirección es muy larga."),
+  barrio: z.string().trim().min(2, "Escribe el barrio.").max(60, "El nombre del barrio es muy largo."),
+  referencia: z.string().trim().max(160, "La referencia es muy larga.").optional(),
+  pago: z.string().trim().min(1, "Elige cómo vas a pagar.").max(30),
+  pagaCon: z.number().int().min(1).max(10_000_000).optional(),
+});
+
 const INCLUIR_ITEMS = { items: { orderBy: { orden: "asc" } } } as const;
 type PedidoConItems = Prisma.PedidoGetPayload<{ include: typeof INCLUIR_ITEMS }>;
 
@@ -42,10 +63,18 @@ export function pedidoDTO(p: PedidoConItems): PedidoDTO {
   return {
     id: p.id,
     numero: p.numero,
+    tipo: p.tipo,
     mesaId: p.mesaId,
     mesaNumero: p.mesaNumero,
     cliente: p.cliente,
     nota: p.nota,
+    telefono: p.telefono,
+    direccion: p.direccion,
+    barrio: p.barrio,
+    referencia: p.referencia,
+    pagoPreferido: p.pagoPreferido,
+    pagaCon: p.pagaCon,
+    costoEnvio: p.costoEnvio,
     estado: p.estado,
     total: p.total,
     metodoPago: p.metodoPago,
@@ -65,22 +94,12 @@ export function pedidoDTO(p: PedidoConItems): PedidoDTO {
 }
 
 /**
- * Pedido desde el QR de una mesa. El servidor valida cada línea contra la carta actual
- * y calcula todos los precios: lo que diga el navegador sobre precios no cuenta.
+ * Valida cada línea contra la carta actual y calcula todos los precios: lo que diga el
+ * navegador sobre precios no cuenta.
  */
-export async function crearPedido(codigo: string, entrada: unknown) {
-  const datos = esquemaPedido.safeParse(entrada);
-  if (!datos.success) throw new ErrorNegocio(datos.error.issues[0]?.message ?? "Revisa tu pedido.");
-
-  const mesa = await db.mesa.findUnique({ where: { codigo } });
-  if (!mesa || !mesa.activa) throw new ErrorNegocio("Este código QR ya no está activo. Pide ayuda al personal.", 404);
-  const ajustes = await leerAjustes();
-  if (!ajustes.recibiendoPedidos) {
-    throw new ErrorNegocio("En este momento no estamos recibiendo pedidos por el QR. Pide ayuda al personal.", 409);
-  }
-
-  const productos = await productosParaPedido([...new Set(datos.data.items.map((item) => item.productoId))]);
-  const items = datos.data.items.map((item, orden) => {
+async function cotizarLineas(items: z.output<typeof esquemaPedido>["items"]) {
+  const productos = await productosParaPedido([...new Set(items.map((item) => item.productoId))]);
+  const lineas = items.map((item, orden) => {
     const producto = productos.get(item.productoId);
     if (!producto || !producto.visible) {
       throw new ErrorNegocio("Uno de los productos ya no está en la carta. Revisa tu pedido.", 409);
@@ -101,8 +120,14 @@ export async function crearPedido(codigo: string, entrada: unknown) {
       orden,
     };
   });
-  const total = items.reduce((suma, item) => suma + item.subtotal, 0);
+  return { lineas, subtotal: lineas.reduce((suma, linea) => suma + linea.subtotal, 0) };
+}
 
+type DatosPedido = Omit<Prisma.PedidoUncheckedCreateInput, "fecha" | "numero" | "items">;
+type Linea = Awaited<ReturnType<typeof cotizarLineas>>["lineas"][number];
+
+/** Guarda el pedido con el consecutivo del día y avisa al panel en vivo. */
+async function guardarPedido(datos: DatosPedido, lineas: Linea[]) {
   const dia = diaColombia();
   const pedido = await db.$transaction(async (tx) => {
     // Consecutivo del día: una sola sentencia atómica, sin choques entre pedidos simultáneos.
@@ -111,38 +136,103 @@ export async function crearPedido(codigo: string, entrada: unknown) {
       ON CONFLICT ("fecha") DO UPDATE SET "ultimo" = "ContadorPedidos"."ultimo" + 1
       RETURNING "ultimo"`;
     return tx.pedido.create({
-      data: {
-        fecha: fechaDia(dia),
-        numero: filas[0].ultimo,
-        mesaId: mesa.id,
-        mesaNumero: mesa.numero,
-        cliente: datos.data.cliente,
-        nota: datos.data.nota || null,
-        total,
-        items: { create: items },
-      },
-      select: { id: true, numero: true, total: true, estado: true },
+      data: { ...datos, fecha: fechaDia(dia), numero: filas[0].ultimo, items: { create: lineas } },
+      select: { id: true, numero: true, total: true, estado: true, tipo: true, mesaNumero: true },
     });
   });
-  avisarPedido({ tipo: "creado", pedidoId: pedido.id, numero: pedido.numero, mesaNumero: mesa.numero, estado: pedido.estado });
-  return { ...pedido, mesaNumero: mesa.numero };
+  avisarPedido({ tipo: "creado", pedidoId: pedido.id, numero: pedido.numero, mesaNumero: pedido.mesaNumero, estado: pedido.estado });
+  return pedido;
+}
+
+/** Pedido desde el QR de una mesa. */
+export async function crearPedido(codigo: string, entrada: unknown) {
+  const datos = esquemaPedido.safeParse(entrada);
+  if (!datos.success) throw new ErrorNegocio(datos.error.issues[0]?.message ?? "Revisa tu pedido.");
+
+  const mesa = await db.mesa.findUnique({ where: { codigo } });
+  if (!mesa || !mesa.activa) throw new ErrorNegocio("Este código QR ya no está activo. Pide ayuda al personal.", 404);
+  const ajustes = await leerAjustes();
+  if (!ajustes.recibiendoPedidos) {
+    throw new ErrorNegocio("En este momento no estamos recibiendo pedidos por el QR. Pide ayuda al personal.", 409);
+  }
+  const { lineas, subtotal } = await cotizarLineas(datos.data.items);
+  return guardarPedido(
+    { tipo: "MESA", mesaId: mesa.id, mesaNumero: mesa.numero, cliente: datos.data.cliente, nota: datos.data.nota || null, total: subtotal },
+    lineas,
+  );
+}
+
+/**
+ * Pedido a domicilio desde el QR de domicilios. El valor del domicilio sale de Ajustes; si no
+ * está definido queda «por confirmar» y el panel lo fija antes de cobrar.
+ */
+export async function crearDomicilio(entrada: unknown) {
+  const datos = esquemaDomicilio.safeParse(entrada);
+  if (!datos.success) throw new ErrorNegocio(datos.error.issues[0]?.message ?? "Revisa tus datos.");
+  const d = datos.data;
+
+  const ajustes = await leerAjustes();
+  if (!ajustes.recibiendoPedidos || !ajustes.domiciliosActivos) {
+    throw new ErrorNegocio("En este momento no estamos tomando domicilios. Intenta de nuevo más tarde.", 409);
+  }
+  if (!ajustes.metodosPago.includes(d.pago)) throw new ErrorNegocio("Elige cómo vas a pagar.");
+
+  const { lineas, subtotal } = await cotizarLineas(d.items);
+  if (subtotal < ajustes.pedidoMinimoDomicilio) {
+    throw new ErrorNegocio(`El pedido mínimo para domicilio es ${pesos(ajustes.pedidoMinimoDomicilio)}.`, 409);
+  }
+  const costoEnvio = ajustes.costoDomicilio;
+  const total = subtotal + (costoEnvio ?? 0);
+  const pagaCon = esEfectivo(d.pago) ? (d.pagaCon ?? null) : null;
+  if (pagaCon !== null && pagaCon < total) {
+    throw new ErrorNegocio(`Con ${pesos(pagaCon)} no alcanza: el total es ${pesos(total)}.`);
+  }
+  return guardarPedido(
+    {
+      tipo: "DOMICILIO",
+      cliente: d.cliente,
+      nota: d.nota || null,
+      telefono: d.telefono,
+      direccion: d.direccion,
+      barrio: d.barrio,
+      referencia: d.referencia || null,
+      pagoPreferido: d.pago,
+      pagaCon,
+      costoEnvio,
+      total,
+    },
+    lineas,
+  );
+}
+
+function pedidoClienteDTO(pedido: PedidoConItems): PedidoClienteDTO {
+  return {
+    id: pedido.id,
+    numero: pedido.numero,
+    tipo: pedido.tipo,
+    mesaNumero: pedido.mesaNumero,
+    cliente: pedido.cliente,
+    estado: pedido.estado,
+    total: pedido.total,
+    costoEnvio: pedido.costoEnvio,
+    pagado: pedido.pagadoEn !== null,
+    creadoEn: pedido.creadoEn.toISOString(),
+    items: pedido.items.map(({ nombre, detalles, cantidad, subtotal, nota }) => ({ nombre, detalles, cantidad, subtotal, nota })),
+  };
 }
 
 /** El pedido tal como lo sigue el cliente (solo si es de esa mesa). */
 export async function pedidoDeMesa(codigo: string, id: string): Promise<PedidoClienteDTO> {
   const pedido = await db.pedido.findFirst({ where: { id, mesa: { codigo } }, include: INCLUIR_ITEMS });
   if (!pedido) throw noEncontrado("El pedido");
-  return {
-    id: pedido.id,
-    numero: pedido.numero,
-    mesaNumero: pedido.mesaNumero,
-    cliente: pedido.cliente,
-    estado: pedido.estado,
-    total: pedido.total,
-    pagado: pedido.pagadoEn !== null,
-    creadoEn: pedido.creadoEn.toISOString(),
-    items: pedido.items.map(({ nombre, detalles, cantidad, subtotal, nota }) => ({ nombre, detalles, cantidad, subtotal, nota })),
-  };
+  return pedidoClienteDTO(pedido);
+}
+
+/** Un domicilio tal como lo sigue el cliente desde su casa (sin su teléfono ni su dirección). */
+export async function pedidoDomicilio(id: string): Promise<PedidoClienteDTO> {
+  const pedido = await db.pedido.findFirst({ where: { id, tipo: "DOMICILIO" }, include: INCLUIR_ITEMS });
+  if (!pedido) throw noEncontrado("El pedido");
+  return pedidoClienteDTO(pedido);
 }
 
 /** Condición de «pedido abierto»: no cancelado y no (entregado y pagado). */
@@ -189,9 +279,11 @@ export async function cobrarPedidos(ids: string[], metodoPago: string) {
   if (!ajustes.metodosPago.includes(metodoPago)) throw new ErrorNegocio("Elige un método de pago de la lista.");
   const cobrables = await db.pedido.findMany({
     where: { id: { in: ids }, estado: { not: "CANCELADO" }, pagadoEn: null },
-    select: { id: true, total: true },
+    select: { id: true, total: true, numero: true, tipo: true, costoEnvio: true },
   });
   if (cobrables.length === 0) throw new ErrorNegocio("No hay pedidos pendientes por cobrar.", 409);
+  const sinValor = cobrables.find((p) => p.tipo === "DOMICILIO" && p.costoEnvio === null);
+  if (sinValor) throw new ErrorNegocio(`Fija el valor del domicilio del pedido #${sinValor.numero} antes de cobrarlo.`, 409);
   await db.pedido.updateMany({
     where: { id: { in: cobrables.map((p) => p.id) }, pagadoEn: null },
     data: { pagadoEn: new Date(), metodoPago },
@@ -217,6 +309,27 @@ export async function anularCobro(id: string, usuario: UsuarioPanel) {
   if (usuario.rol !== "ADMIN") throw new ErrorNegocio("Solo un administrador puede anular un cobro.", 403);
   const { count } = await db.pedido.updateMany({ where: { id, pagadoEn: { not: null } }, data: { pagadoEn: null, metodoPago: null } });
   if (count === 0) throw new ErrorNegocio("Ese pedido no tiene un cobro registrado.", 409);
+  await avisar(id);
+}
+
+/**
+ * Fija (o corrige) el valor del domicilio de un pedido antes de cobrarlo; el total se recalcula
+ * con los productos más el domicilio.
+ */
+export async function fijarCostoEnvio(id: string, valor: number) {
+  if (!Number.isInteger(valor) || valor < 0 || valor > 1_000_000) {
+    throw new ErrorNegocio("Escribe el valor del domicilio en pesos, sin puntos (0 si es gratis).");
+  }
+  const pedido = await db.pedido.findUnique({ where: { id }, select: { tipo: true, total: true, costoEnvio: true, pagadoEn: true } });
+  if (!pedido || pedido.tipo !== "DOMICILIO") throw noEncontrado("El domicilio");
+  if (pedido.pagadoEn) throw new ErrorNegocio("Este domicilio ya está cobrado: anula el cobro para cambiar el valor.", 409);
+  const productos = pedido.total - (pedido.costoEnvio ?? 0);
+  // Solo cambia si nadie lo tocó entretanto (dos personas en el panel a la vez).
+  const { count } = await db.pedido.updateMany({
+    where: { id, pagadoEn: null, costoEnvio: pedido.costoEnvio },
+    data: { costoEnvio: valor, total: productos + valor },
+  });
+  if (count === 0) throw new ErrorNegocio("Otra persona acaba de cambiar este pedido. Actualiza la página.", 409);
   await avisar(id);
 }
 

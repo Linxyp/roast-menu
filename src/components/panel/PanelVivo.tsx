@@ -7,7 +7,7 @@ interface EventoPedido {
   tipo: "creado" | "actualizado";
   pedidoId: string;
   numero: number;
-  mesaNumero: number;
+  mesaNumero: number | null;
 }
 
 interface ContextoVivo {
