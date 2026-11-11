@@ -60,7 +60,7 @@ export default async function PaginaQrMesas({ searchParams }: { searchParams: Pr
   );
 }
 
-/** El QR de domicilios: para redes sociales, volantes, el empaque o el mostrador. */
+/** El QR de domicilios: para volantes, empaques y la vitrina. En redes va la dirección (en el celular se toca, no se escanea). */
 async function QrDomicilio() {
   const url = urlDomicilio();
   const svg = await QRCode.toString(url, OPCIONES_QR);
@@ -74,7 +74,8 @@ async function QrDomicilio() {
           <div>
             <h1 className="panel-titulo">Código QR de domicilios</h1>
             <p className="panel-texto-suave mt-1">
-              Abre la carta para pedir a domicilio. Compártelo en redes sociales y WhatsApp, o imprímelo en volantes y empaques.
+              Abre la carta para pedir a domicilio. Imprímelo en volantes, empaques o la vitrina. En redes sociales y WhatsApp
+              comparte mejor la dirección de abajo: en el celular se toca, no se escanea.
             </p>
           </div>
           <BotonImprimir texto="Imprimir" />
@@ -86,11 +87,16 @@ async function QrDomicilio() {
           <img src="/img/logo-roast-446.webp" alt="ROAST Hamburguesas Artesanales" width={446} height={233} className="qr-logo" />
           <p className="qr-mesa">A domicilio</p>
           <div className="qr-codigo" role="img" aria-label={`QR que abre la carta para pedir a domicilio: ${url}`} dangerouslySetInnerHTML={{ __html: svg }} />
-          <p className="qr-instruccion">Escanea, arma tu pedido y te lo llevamos</p>
+          <p className="qr-instruccion">
+            Escanea, arma tu pedido <span className="whitespace-nowrap">y te lo llevamos</span>
+          </p>
         </article>
       </div>
       <p className="panel-texto-suave no-imprimir mt-4">
-        Dirección: <a className="underline" href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+        Dirección para redes sociales y WhatsApp:{" "}
+        <a className="underline" href={url} target="_blank" rel="noopener noreferrer">
+          {url}
+        </a>
       </p>
     </>
   );
