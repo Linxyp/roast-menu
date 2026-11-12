@@ -148,7 +148,8 @@ export function TarjetaPedido(props: Props) {
 function DatosEntrega({ pedido }: { pedido: PedidoDTO }) {
   const telefono = pedido.telefono ?? "";
   const celular = telefono.startsWith("3");
-  const cambio = pedido.pagaCon !== null ? pedido.pagaCon - pedido.total : null;
+  // El cambio se sabe cuando el valor del domicilio ya está fijado.
+  const cambio = pedido.pagaCon !== null && pedido.costoEnvio !== null ? pedido.pagaCon - pedido.total : null;
   return (
     <div className="pedido-entrega">
       <p className="pedido-entrega-direccion">
@@ -261,7 +262,7 @@ function ValorDomicilio({
         <input
           id={campo}
           inputMode="numeric"
-          placeholder={cobro.tipo === "rango" ? `Otro valor, ej.: ${cobro.desde + 500}` : "Ej.: 4000"}
+          placeholder={cobro.tipo === "rango" ? "Otro valor" : "Ej.: 4000"}
           value={valor}
           onChange={(e) => setValor(e.target.value)}
           className="pedido-valor-campo"

@@ -106,7 +106,8 @@ export function PagoRecibo({ pedido }: { pedido: PedidoDTO }) {
       {pedido.pagaCon !== null ? (
         <p className="recibo-centro">
           Trae {pesos(pedido.pagaCon)}
-          {pedido.pagaCon > pedido.total ? ` · cambio ${pesos(pedido.pagaCon - pedido.total)}` : ""}
+          {/* El cambio se sabe cuando el valor del domicilio ya está fijado. */}
+          {pedido.costoEnvio === null ? " · cambio según el domicilio" : pedido.pagaCon > pedido.total ? ` · cambio ${pesos(pedido.pagaCon - pedido.total)}` : ""}
         </p>
       ) : null}
     </>
