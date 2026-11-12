@@ -65,6 +65,12 @@ body {
   outline: 3px solid var(--color-mostaza);
   outline-offset: 3px;
 }
+/* Lo que recibe el foco solo para anunciarse (el título «Tu pedido», el menú) no lleva marco: Safari
+   de iPhone lo pintaba aunque el cliente hubiera tocado la pantalla. Va fuera de las capas para
+   ganarle a la regla de arriba. */
+[tabindex="-1"]:focus-visible {
+  outline: none;
+}
 
 ::selection {
   background: var(--color-mostaza);
@@ -1160,9 +1166,6 @@ body {
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-  }
-  .pedido-titulo:focus {
-    outline: none;
   }
   .pedido-mesa {
     font-size: 0.85rem;
