@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import type { CartaDTO, CategoriaDTO, DestinoPedido, ProductoDTO } from "@/lib/carta";
 import { pesos } from "@/lib/formato";
+import { textoCobroDomicilio } from "@/lib/pedido";
 import { IconoBebida, IconoCasa, IconoHamburguesa, IconoMas, IconoPapas } from "../Iconos";
 import { BotonProducto } from "./BotonProducto";
 import { Diagnostico } from "./Diagnostico";
@@ -58,15 +59,22 @@ function Introduccion({ carta, destino }: { carta: CartaDTO; destino: DestinoPed
   }
   const { domicilio } = destino;
   if (!domicilio.activo) return <p className="encabezado-intro">En este momento no estamos tomando domicilios. Vuelve más tarde</p>;
+  const { cobro } = domicilio;
   const condiciones = [
-    domicilio.costo === null ? "Domicilio: te confirmamos el valor" : domicilio.costo === 0 ? "Domicilio gratis" : `Domicilio ${pesos(domicilio.costo)}`,
+    cobro.tipo === "confirmar"
+      ? "Domicilio: te confirmamos el valor"
+      : cobro.tipo === "rango"
+        ? `Domicilio de ${textoCobroDomicilio(cobro)}`
+        : cobro.valor === 0
+          ? "Domicilio gratis"
+          : `Domicilio ${pesos(cobro.valor)}`,
     domicilio.minimo > 0 ? `pedido mínimo ${pesos(domicilio.minimo)}` : null,
   ].filter(Boolean);
   return (
     <>
       <p className="encabezado-intro">Arma tu pedido y te lo llevamos a tu casa</p>
       <p className="encabezado-condiciones">{condiciones.join(" · ")}</p>
-      {domicilio.zona ? <p className="encabezado-condiciones">Llevamos a: {domicilio.zona}</p> : null}
+      {domicilio.zona ? <p className="encabezado-condiciones">Zona de entrega: {domicilio.zona}</p> : null}
     </>
   );
 }

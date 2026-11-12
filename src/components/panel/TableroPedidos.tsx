@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { cambiarEstadoPedido, cambiarRecepcionPedidos, cobrarPedidos, fijarValorDomicilio, marcarImpreso } from "@/app/admin/acciones";
 import { pesos } from "@/lib/formato";
-import { lugarPedido, type EstadoPedido, type PedidoDTO } from "@/lib/pedido";
+import { lugarPedido, type CobroDomicilio, type EstadoPedido, type PedidoDTO } from "@/lib/pedido";
 import { DialogoCobro, DialogoConfirmar } from "./Dialogos";
 import { useVivo } from "./PanelVivo";
 import { TarjetaPedido } from "./TarjetaPedido";
@@ -13,6 +13,8 @@ export interface DatosTablero {
   pedidos: PedidoDTO[];
   metodosPago: string[];
   recibiendoPedidos: boolean;
+  /** Cómo se cobra el domicilio (con un rango, la tarjeta ofrece los valores con un toque). */
+  cobroDomicilio: CobroDomicilio;
 }
 
 const COLUMNAS: { clave: string; titulo: string; incluye: (p: PedidoDTO) => boolean; vacio: string }[] = [
@@ -178,6 +180,7 @@ export function TableroPedidos({ inicial }: { inicial: DatosTablero }) {
                 onCobrar={() => setCobrando(pedido)}
                 onCancelar={() => setCancelando(pedido)}
                 onImprimir={() => imprimir(pedido)}
+                cobroDomicilio={datos.cobroDomicilio}
                 onFijarValor={(valor) => ejecutar(pedido.id, () => fijarValorDomicilio(pedido.id, valor))}
               />
             ))}

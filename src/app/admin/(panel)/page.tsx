@@ -1,4 +1,5 @@
 import { TableroPedidos } from "@/components/panel/TableroPedidos";
+import { cobroDomicilio } from "@/lib/pedido";
 import { leerAjustes } from "@/server/ajustes";
 import { requerirPagina } from "@/server/auth/acceso";
 import { pedidosAbiertos } from "@/server/pedidos";
@@ -15,7 +16,14 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           Esa sección es solo para administradores.
         </p>
       ) : null}
-      <TableroPedidos inicial={{ pedidos, metodosPago: ajustes.metodosPago, recibiendoPedidos: ajustes.recibiendoPedidos }} />
+      <TableroPedidos
+        inicial={{
+          pedidos,
+          metodosPago: ajustes.metodosPago,
+          recibiendoPedidos: ajustes.recibiendoPedidos,
+          cobroDomicilio: cobroDomicilio(ajustes.costoDomicilio, ajustes.costoDomicilioMaximo),
+        }}
+      />
     </>
   );
 }

@@ -283,6 +283,8 @@ model Ajustes {
   domiciliosActivos     Boolean  @default(true)
   /// Valor del domicilio; null = se confirma con el cliente y se fija en cada pedido desde el panel.
   costoDomicilio        Int?
+  /// Si cambia según la distancia: valor más alto (costoDomicilio es el más bajo). Se fija en cada pedido.
+  costoDomicilioMaximo  Int?
   pedidoMinimoDomicilio Int      @default(0)
   /// Hasta dónde llegan (lo ve el cliente).
   zonaDomicilio         String   @default("")

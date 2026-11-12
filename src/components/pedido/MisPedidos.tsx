@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { DestinoPedido } from "@/lib/carta";
 import { formatearTelefono, hora, pesos } from "@/lib/formato";
-import { NOMBRE_ESTADO, type EstadoPedido, type PedidoClienteDTO } from "@/lib/pedido";
+import { NOMBRE_ESTADO, textoCobroDomicilio, type EstadoPedido, type PedidoClienteDTO } from "@/lib/pedido";
 import { IconoCerrar } from "../Iconos";
 import type { PedidoEnviado } from "./almacen";
 
@@ -42,6 +42,11 @@ export function MisPedidos({ destino, pedidos, onCerrar, onPedirMas }: Props) {
   const [estados, setEstados] = useState<Record<string, PedidoClienteDTO | null>>({});
   const domicilio = destino.tipo === "domicilio";
   const telefono = destino.tipo === "domicilio" ? destino.domicilio.telefono : "";
+  // Mientras no se confirme, se muestra el rango (si lo hay): «$8.000 a $10.000 · por confirmar».
+  const envioPendiente =
+    destino.tipo === "domicilio" && destino.domicilio.cobro.tipo === "rango"
+      ? `${textoCobroDomicilio(destino.domicilio.cobro)} · por confirmar`
+      : "por confirmar";
   const ruta = rutaPedidos(destino);
 
   useEffect(() => {
@@ -113,12 +118,14 @@ export function MisPedidos({ destino, pedidos, onCerrar, onPedirMas }: Props) {
                     {pedido.tipo === "DOMICILIO" ? (
                       <li>
                         <span>Domicilio</span>
-                        <span>{pedido.costoEnvio === null ? "por confirmar" : pedido.costoEnvio === 0 ? "gratis" : pesos(pedido.costoEnvio)}</span>
+                        <span>{pedido.costoEnvio === null ? envioPendiente : pedido.costoEnvio === 0 ? "gratis" : pesos(pedido.costoEnvio)}</span>
                       </li>
                     ) : null}
                   </ul>
                   <p className="seguimiento-total">
-                    <span>Total {pedido.pagado ? "· pagado" : "· por pagar"}</span>
+                    <span>
+                      Total{pedido.tipo === "DOMICILIO" && pedido.costoEnvio === null ? " sin domicilio" : ""} {pedido.pagado ? "· pagado" : "· por pagar"}
+                    </span>
                     <strong>{pesos(pedido.total)}</strong>
                   </p>
                 </>

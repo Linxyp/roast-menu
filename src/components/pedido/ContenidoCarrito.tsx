@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import type { DetalleCarrito } from "@/lib/carrito";
 import type { DestinoPedido } from "@/lib/carta";
 import { pesos } from "@/lib/formato";
-import { esEfectivo, normalizarTelefono } from "@/lib/pedido";
+import { envioMaximo, esEfectivo, normalizarTelefono, textoCobroDomicilio } from "@/lib/pedido";
 import { Foto } from "../carta/Foto";
 import { NombreProducto } from "../carta/NombreProducto";
 import { IconoBolsa, IconoCerrar, IconoLapiz, IconoPapelera } from "../Iconos";
@@ -51,8 +51,11 @@ export function ContenidoCarrito(props: Props) {
   const vacio = detalle.lineas.length === 0;
 
   const domicilio = destino.tipo === "domicilio" ? destino.domicilio : null;
-  const envio = domicilio ? domicilio.costo : 0;
-  const total = detalle.total + (envio ?? 0);
+  const cobro = domicilio?.cobro ?? null;
+  // Con un rango según la distancia, el total va del domicilio más barato al más caro.
+  const totalDesde = detalle.total + (cobro?.tipo === "fijo" ? cobro.valor : cobro?.tipo === "rango" ? cobro.desde : 0);
+  const totalHasta = detalle.total + (cobro ? envioMaximo(cobro) : 0);
+  const textoTotal = totalHasta > totalDesde ? `${pesos(totalDesde)} a ${pesos(totalHasta)}` : pesos(totalDesde);
   const faltaParaMinimo = domicilio && domicilio.minimo > detalle.total ? domicilio.minimo - detalle.total : 0;
   const efectivo = esEfectivo(entrega.pago);
   const pagaCon = Number(entrega.pagaCon.replace(/\D/g, ""));
@@ -67,8 +70,9 @@ export function ContenidoCarrito(props: Props) {
     if (entrega.direccion.trim().length < 5) errores.direccion = "Escribe la dirección completa.";
     if (entrega.barrio.trim().length < 2) errores.barrio = "Escribe el barrio.";
     if (!domicilio.metodosPago.includes(entrega.pago)) errores.pago = "Elige cómo vas a pagar.";
-    if (efectivo && pagaCon > 0 && envio !== null && pagaCon < total) {
-      errores.pagaCon = `Con ${pesos(pagaCon)} no alcanza: el total es ${pesos(total)}.`;
+    if (efectivo && pagaCon > 0 && cobro?.tipo !== "confirmar" && pagaCon < totalHasta) {
+      const cuanto = cobro?.tipo === "rango" ? `puede llegar a ${pesos(totalHasta)}` : `es ${pesos(totalHasta)}`;
+      errores.pagaCon = `Con ${pesos(pagaCon)} no alcanza: el total ${cuanto}.`;
     }
   }
   const errorDe = (campo: Campo) => (revisar ? errores[campo] : undefined);
@@ -186,16 +190,18 @@ export function ContenidoCarrito(props: Props) {
                 </div>
                 <div>
                   <dt>Domicilio</dt>
-                  <dd>{envio === null ? "por confirmar" : envio === 0 ? "gratis" : pesos(envio)}</dd>
+                  <dd>{cobro ? textoCobroDomicilio(cobro) : null}</dd>
                 </div>
               </dl>
             ) : null}
             <div className="pedido-total">
               <span>Total</span>
-              <strong>{pesos(total)}</strong>
+              <strong>{textoTotal}</strong>
             </div>
-            {domicilio && envio === null ? (
+            {cobro?.tipo === "confirmar" ? (
               <p className="pedido-pago text-left">El valor del domicilio te lo confirmamos al llamarte; se suma al total.</p>
+            ) : cobro?.tipo === "rango" ? (
+              <p className="pedido-pago text-left">El domicilio depende de la distancia: te confirmamos el valor exacto al llamarte.</p>
             ) : null}
 
             {domicilio ? (
@@ -203,7 +209,7 @@ export function ContenidoCarrito(props: Props) {
                 <h3 id="titulo-datos" className="pedido-subtitulo">
                   ¿A dónde te lo llevamos?
                 </h3>
-                {domicilio.zona ? <p className="campo-ayuda">Llevamos a: {domicilio.zona}</p> : null}
+                {domicilio.zona ? <p className="campo-ayuda">Zona de entrega: {domicilio.zona}</p> : null}
                 <div className="campo">
                   <label htmlFor="campo-cliente">Tu nombre</label>
                   <input
@@ -371,7 +377,7 @@ export function ContenidoCarrito(props: Props) {
           {recibiendo ? (
             <button type="button" className="boton-primario w-full" onClick={enviar} disabled={enviando || !detalle.listo || faltaParaMinimo > 0}>
               <span>{enviando ? "Enviando…" : "Enviar pedido"}</span>
-              <span className="boton-primario-precio">{pesos(total)}</span>
+              <span className="boton-primario-precio">{textoTotal}</span>
             </button>
           ) : (
             <p className="pedido-pausado" role="note">

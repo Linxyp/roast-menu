@@ -1,3 +1,4 @@
+import { cobroDomicilio } from "@/lib/pedido";
 import { leerAjustes } from "@/server/ajustes";
 import { requerirApi } from "@/server/auth/acceso";
 import { respuestaError } from "@/server/errores";
@@ -10,7 +11,12 @@ export async function GET() {
   try {
     await requerirApi();
     const [pedidos, ajustes] = await Promise.all([pedidosAbiertos(), leerAjustes()]);
-    return Response.json({ pedidos, metodosPago: ajustes.metodosPago, recibiendoPedidos: ajustes.recibiendoPedidos });
+    return Response.json({
+      pedidos,
+      metodosPago: ajustes.metodosPago,
+      recibiendoPedidos: ajustes.recibiendoPedidos,
+      cobroDomicilio: cobroDomicilio(ajustes.costoDomicilio, ajustes.costoDomicilioMaximo),
+    });
   } catch (error) {
     return respuestaError(error);
   }

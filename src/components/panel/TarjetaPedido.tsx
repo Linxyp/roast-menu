@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { formatearTelefono, hace, hora, pesos } from "@/lib/formato";
-import { NOMBRE_ESTADO, lugarPedido, type EstadoPedido, type PedidoDTO } from "@/lib/pedido";
+import {
+  NOMBRE_ESTADO,
+  lugarPedido,
+  textoCobroDomicilio,
+  valoresSugeridos,
+  type CobroDomicilio,
+  type EstadoPedido,
+  type PedidoDTO,
+} from "@/lib/pedido";
 import { IconoImpresora, IconoMensaje, IconoTelefono } from "../Iconos";
 
 export const CLASE_ESTADO: Record<EstadoPedido, string> = {
@@ -35,11 +43,14 @@ interface Props {
   onCobrar: () => void;
   onCancelar: () => void;
   onImprimir: () => void;
+  /** Cómo se cobra el domicilio según Ajustes (con un rango, se elige el valor con un toque). */
+  cobroDomicilio: CobroDomicilio;
   /** Domicilios: fija el valor del domicilio (devuelve el error, si lo hubo). */
   onFijarValor: (valor: number) => Promise<string | null>;
 }
 
-export function TarjetaPedido({ pedido, reciente, ocupado, ahora, onEstado, onCobrar, onCancelar, onImprimir, onFijarValor }: Props) {
+export function TarjetaPedido(props: Props) {
+  const { pedido, reciente, ocupado, ahora, onEstado, onCobrar, onCancelar, onImprimir, onFijarValor } = props;
   const siguiente = SIGUIENTE[pedido.estado];
   const atras = ATRAS[pedido.estado];
   const pagado = pedido.pagadoEn !== null;
@@ -79,7 +90,7 @@ export function TarjetaPedido({ pedido, reciente, ocupado, ahora, onEstado, onCo
       </ul>
       {pedido.nota ? <p className="pedido-nota-general">{pedido.nota}</p> : null}
 
-      {domicilio ? <ValorDomicilio pedido={pedido} pagado={pagado} ocupado={ocupado} onFijar={onFijarValor} /> : null}
+      {domicilio ? <ValorDomicilio pedido={pedido} pagado={pagado} ocupado={ocupado} cobro={props.cobroDomicilio} onFijar={onFijarValor} /> : null}
 
       <div className="pedido-pie">
         <span className="pedido-total-panel">{pesos(pedido.total)}</span>
@@ -176,17 +187,29 @@ function ValorDomicilio({
   pedido,
   pagado,
   ocupado,
+  cobro,
   onFijar,
 }: {
   pedido: PedidoDTO;
   pagado: boolean;
   ocupado: boolean;
+  cobro: CobroDomicilio;
   onFijar: (valor: number) => Promise<string | null>;
 }) {
   const [editando, setEditando] = useState(false);
   const [valor, setValor] = useState(pedido.costoEnvio !== null ? String(pedido.costoEnvio) : "");
   const [error, setError] = useState<string | null>(null);
   const campo = `valor-domicilio-${pedido.id}`;
+  const sugeridos = valoresSugeridos(cobro);
+
+  async function fijar(numero: number) {
+    const problema = await onFijar(numero);
+    setError(problema);
+    if (!problema) {
+      setValor(String(numero));
+      setEditando(false);
+    }
+  }
 
   if (pedido.costoEnvio !== null && !editando) {
     return (
@@ -209,20 +232,36 @@ function ValorDomicilio({
         e.preventDefault();
         const numero = Number(valor.replace(/\D/g, ""));
         if (valor.trim() === "" || !Number.isFinite(numero)) {
-          setError("Escribe el valor (0 si es gratis).");
+          setError(cobro.tipo === "rango" ? `Elige o escribe el valor (${textoCobroDomicilio(cobro)}).` : "Escribe el valor (0 si es gratis).");
           return;
         }
-        const problema = await onFijar(numero);
-        setError(problema);
-        if (!problema) setEditando(false);
+        await fijar(numero);
       }}
     >
-      <label htmlFor={campo}>Valor del domicilio {pedido.costoEnvio === null ? "(por confirmar)" : ""}</label>
+      <label htmlFor={campo}>
+        Valor del domicilio{" "}
+        {cobro.tipo === "rango" ? `(${textoCobroDomicilio(cobro)})` : pedido.costoEnvio === null ? "(por confirmar)" : ""}
+      </label>
+      {sugeridos.length ? (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Valores del domicilio">
+          {sugeridos.map((v) => (
+            <button
+              key={v}
+              type="button"
+              className={`boton-panel boton-panel-mini ${pedido.costoEnvio === v ? "boton-panel-principal" : ""}`}
+              disabled={ocupado}
+              onClick={() => void fijar(v)}
+            >
+              {pesos(v)}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="flex gap-2">
         <input
           id={campo}
           inputMode="numeric"
-          placeholder="Ej.: 4000"
+          placeholder={cobro.tipo === "rango" ? `Otro valor, ej.: ${cobro.desde + 500}` : "Ej.: 4000"}
           value={valor}
           onChange={(e) => setValor(e.target.value)}
           className="pedido-valor-campo"

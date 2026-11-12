@@ -6,6 +6,8 @@ import {
   MAX_CANTIDAD,
   MAX_LINEAS,
   TRANSICIONES,
+  cobroDomicilio,
+  envioMaximo,
   esEfectivo,
   normalizarTelefono,
   type EstadoPedido,
@@ -163,8 +165,8 @@ export async function crearPedido(codigo: string, entrada: unknown) {
 }
 
 /**
- * Pedido a domicilio desde el QR de domicilios. El valor del domicilio sale de Ajustes; si no
- * está definido queda «por confirmar» y el panel lo fija antes de cobrar.
+ * Pedido a domicilio desde el QR de domicilios. El valor del domicilio sale de Ajustes; si es un
+ * rango según la distancia o no está definido, queda «por confirmar» y el panel lo fija antes de cobrar.
  */
 export async function crearDomicilio(entrada: unknown) {
   const datos = esquemaDomicilio.safeParse(entrada);
@@ -181,11 +183,15 @@ export async function crearDomicilio(entrada: unknown) {
   if (subtotal < ajustes.pedidoMinimoDomicilio) {
     throw new ErrorNegocio(`El pedido mínimo para domicilio es ${pesos(ajustes.pedidoMinimoDomicilio)}.`, 409);
   }
-  const costoEnvio = ajustes.costoDomicilio;
+  const cobro = cobroDomicilio(ajustes.costoDomicilio, ajustes.costoDomicilioMaximo);
+  const costoEnvio = cobro.tipo === "fijo" ? cobro.valor : null;
   const total = subtotal + (costoEnvio ?? 0);
+  // Con un rango, el efectivo debe alcanzar para el domicilio más caro.
+  const totalMaximo = subtotal + envioMaximo(cobro);
   const pagaCon = esEfectivo(d.pago) ? (d.pagaCon ?? null) : null;
-  if (pagaCon !== null && pagaCon < total) {
-    throw new ErrorNegocio(`Con ${pesos(pagaCon)} no alcanza: el total es ${pesos(total)}.`);
+  if (pagaCon !== null && pagaCon < totalMaximo) {
+    const cuanto = cobro.tipo === "rango" ? `puede llegar a ${pesos(totalMaximo)}` : `es ${pesos(totalMaximo)}`;
+    throw new ErrorNegocio(`Con ${pesos(pagaCon)} no alcanza: el total ${cuanto}.`);
   }
   return guardarPedido(
     {
@@ -314,11 +320,16 @@ export async function anularCobro(id: string, usuario: UsuarioPanel) {
 
 /**
  * Fija (o corrige) el valor del domicilio de un pedido antes de cobrarlo; el total se recalcula
- * con los productos más el domicilio.
+ * con los productos más el domicilio. Si Ajustes tiene un rango, el valor debe quedar dentro.
  */
 export async function fijarCostoEnvio(id: string, valor: number) {
   if (!Number.isInteger(valor) || valor < 0 || valor > 1_000_000) {
     throw new ErrorNegocio("Escribe el valor del domicilio en pesos, sin puntos (0 si es gratis).");
+  }
+  const ajustes = await leerAjustes();
+  const cobro = cobroDomicilio(ajustes.costoDomicilio, ajustes.costoDomicilioMaximo);
+  if (cobro.tipo === "rango" && (valor < cobro.desde || valor > cobro.hasta)) {
+    throw new ErrorNegocio(`El domicilio va de ${pesos(cobro.desde)} a ${pesos(cobro.hasta)} (se cambia en Ajustes).`);
   }
   const pedido = await db.pedido.findUnique({ where: { id }, select: { tipo: true, total: true, costoEnvio: true, pagadoEn: true } });
   if (!pedido || pedido.tipo !== "DOMICILIO") throw noEncontrado("El domicilio");

@@ -36,9 +36,12 @@ Roles: **Administrador** (todo) y **Personal** (pedidos, mesas, cobros y ventas;
 
 - El cliente escanea el QR de domicilios (redes, volantes, empaques) y pide desde su casa: nombre,
   celular, dirección, barrio, indicaciones, cómo va a pagar y, si es en efectivo, con cuánto paga.
-- El valor del domicilio sale de Ajustes → Domicilios. Si se deja vacío, cada pedido llega «por
-  confirmar»: el panel lo fija en la tarjeta del pedido antes de cobrar (con zonas distintas, por
-  ejemplo). También hay pedido mínimo, zona de cobertura e interruptor para pausar los domicilios.
+- El valor del domicilio sale de Ajustes → Domicilios: un valor fijo, un rango según la distancia
+  («desde» y «hasta»: el cliente ve el rango y el panel elige el valor de cada pedido con un toque,
+  sin salirse del rango) o vacío, y cada pedido llega «por confirmar». El panel lo fija en la
+  tarjeta del pedido antes de cobrar. También hay pedido mínimo (sin contar el domicilio), zona de
+  entrega e interruptor para pausar los domicilios. Con efectivo, «con cuánto paga» debe alcanzar
+  para el domicilio más caro del rango.
 - La tarjeta del pedido trae la dirección, el botón para llamar o escribir por WhatsApp y el cambio
   que hay que llevar. La comanda impresa lleva los mismos datos.
 - Mesas y domicilios comparten la numeración del día; en Ventas los domicilios salen aparte.
@@ -90,6 +93,5 @@ Se dejaron así sin inventar datos; todo se cambia desde el panel:
 - Salchipapa y mazorcada familiares: incluyen 2 toppings y no venden adicionales.
 - Qué bebida trae el combo y los sabores de «Productos Coca-Cola» (el cliente lo indica en la nota).
 - Métodos de pago (Efectivo, Nequi, Daviplata, Tarjeta), dirección, horario e Instagram.
-- Domicilios: valor del envío, pedido mínimo, zona de cobertura y WhatsApp del negocio
-  (Ajustes → Domicilios). Mientras tanto el valor del domicilio llega «por confirmar».
+- WhatsApp definitivo del negocio para los domicilios (Ajustes → Domicilios).
 - Fotos del perro y de las mazorcadas (se suben en Carta → Editar).

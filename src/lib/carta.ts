@@ -1,4 +1,5 @@
 // Forma en que la carta viaja del servidor a la página (solo datos públicos).
+import type { CobroDomicilio } from "./pedido";
 
 export interface ImagenDTO {
   id: string;
@@ -95,8 +96,8 @@ export interface MesaDTO {
 export interface DomicilioDTO {
   /** Se pueden pedir domicilios ahora (también respeta la pausa general de pedidos). */
   activo: boolean;
-  /** Valor del domicilio; null = se confirma con el cliente. */
-  costo: number | null;
+  /** Valor fijo, rango según la distancia o por confirmar. */
+  cobro: CobroDomicilio;
   minimo: number;
   zona: string;
   telefono: string;

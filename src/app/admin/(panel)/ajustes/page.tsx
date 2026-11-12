@@ -29,6 +29,7 @@ export default async function PaginaAjustes() {
             instagram: ajustes.instagram,
             domiciliosActivos: ajustes.domiciliosActivos,
             costoDomicilio: ajustes.costoDomicilio,
+            costoDomicilioMaximo: ajustes.costoDomicilioMaximo,
             pedidoMinimoDomicilio: ajustes.pedidoMinimoDomicilio,
             zonaDomicilio: ajustes.zonaDomicilio,
             telefonoNegocio: ajustes.telefonoNegocio,

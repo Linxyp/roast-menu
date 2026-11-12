@@ -40,6 +40,7 @@ async function ajustarDomicilios(cambios: Record<string, unknown>) {
     instagram: a.instagram,
     domiciliosActivos: a.domiciliosActivos,
     costoDomicilio: a.costoDomicilio,
+    costoDomicilioMaximo: a.costoDomicilioMaximo,
     pedidoMinimoDomicilio: a.pedidoMinimoDomicilio,
     zonaDomicilio: a.zonaDomicilio,
     telefonoNegocio: a.telefonoNegocio,
@@ -84,6 +85,29 @@ describe("pedidos a domicilio", () => {
     await expect(cobrarPedidos([pedido.id], "Nequi")).resolves.toEqual({ pedidos: 1, total: 15000 });
     await rechaza(fijarCostoEnvio(pedido.id, 1000), 409, "ya está cobrado");
     await rechaza(fijarCostoEnvio(pedido.id, -1), 400, "en pesos");
+  });
+
+  test("con un rango según la distancia: llega por confirmar, el efectivo alcanza para el más caro y el panel elige dentro del rango", async () => {
+    await ajustarDomicilios({ costoDomicilio: 8000, costoDomicilioMaximo: 10000, pedidoMinimoDomicilio: 25000 });
+    await expect(datosDomicilio()).resolves.toMatchObject({ cobro: { tipo: "rango", desde: 8000, hasta: 10000 }, minimo: 25000 });
+
+    const items = gaseosas(5); // $25.000: justo el mínimo
+    await rechaza(crearDomicilio({ ...entrega, pagaCon: 34000, items }), 400, "no alcanza: el total puede llegar a \\$35.000");
+    const pedido = await crearDomicilio({ ...entrega, pagaCon: 50000, items });
+    await expect(pedidoPorId(pedido.id)).resolves.toMatchObject({ costoEnvio: null, total: 25000, pagaCon: 50000 });
+
+    await rechaza(fijarCostoEnvio(pedido.id, 12000), 400, "va de \\$8.000 a \\$10.000");
+    await rechaza(fijarCostoEnvio(pedido.id, 5000), 400, "va de \\$8.000 a \\$10.000");
+    await fijarCostoEnvio(pedido.id, 9000);
+    await expect(pedidoPorId(pedido.id)).resolves.toMatchObject({ costoEnvio: 9000, total: 34000 });
+  });
+
+  test("el rango de Ajustes se valida: «hasta» necesita «desde» y no puede ser menor; si son iguales es un valor fijo", async () => {
+    await expect(ajustarDomicilios({ costoDomicilio: null, costoDomicilioMaximo: 10000 })).rejects.toThrow("desde cuánto");
+    await expect(ajustarDomicilios({ costoDomicilio: 10000, costoDomicilioMaximo: 8000 })).rejects.toThrow("no puede ser menor");
+    await ajustarDomicilios({ costoDomicilio: 8000, costoDomicilioMaximo: 8000 });
+    await expect(leerAjustes()).resolves.toMatchObject({ costoDomicilio: 8000, costoDomicilioMaximo: null });
+    await expect(datosDomicilio()).resolves.toMatchObject({ cobro: { tipo: "fijo", valor: 8000 } });
   });
 
   test("valida celular, dirección, barrio, forma de pago y con cuánto paga, y no guarda nada si algo falla", async () => {

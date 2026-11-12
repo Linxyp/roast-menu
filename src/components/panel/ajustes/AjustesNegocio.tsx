@@ -16,6 +16,7 @@ interface Datos {
   instagram: string;
   domiciliosActivos: boolean;
   costoDomicilio: number | null;
+  costoDomicilioMaximo: number | null;
   pedidoMinimoDomicilio: number;
   zonaDomicilio: string;
   telefonoNegocio: string;
@@ -32,6 +33,7 @@ export function AjustesNegocio({ inicial }: { inicial: Datos }) {
   const [datos, setDatos] = useState(inicial);
   const [metodos, setMetodos] = useState(inicial.metodosPago.join("\n"));
   const [costo, setCosto] = useState(inicial.costoDomicilio === null ? "" : String(inicial.costoDomicilio));
+  const [costoMaximo, setCostoMaximo] = useState(inicial.costoDomicilioMaximo === null ? "" : String(inicial.costoDomicilioMaximo));
   const [minimo, setMinimo] = useState(inicial.pedidoMinimoDomicilio ? String(inicial.pedidoMinimoDomicilio) : "");
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -46,6 +48,7 @@ export function AjustesNegocio({ inicial }: { inicial: Datos }) {
         const r = await guardarAjustesNegocio({
           ...datos,
           costoDomicilio: aPesos(costo),
+          costoDomicilioMaximo: aPesos(costoMaximo),
           pedidoMinimoDomicilio: aPesos(minimo) ?? 0,
           metodosPago: metodos
             .split("\n")
@@ -122,16 +125,29 @@ export function AjustesNegocio({ inicial }: { inicial: Datos }) {
             <label htmlFor="a-costo-domicilio">
               Valor del domicilio <span className="campo-opcional">(vacío: se confirma en cada pedido; 0: gratis)</span>
             </label>
-            <input id="a-costo-domicilio" type="text" inputMode="numeric" placeholder="Ej.: 4000" value={costo} onChange={(e) => setCosto(e.target.value)} />
+            <input id="a-costo-domicilio" type="text" inputMode="numeric" placeholder="Ej.: 8000" value={costo} onChange={(e) => setCosto(e.target.value)} />
           </div>
           <div className="campo">
-            <label htmlFor="a-minimo-domicilio">
-              Pedido mínimo <span className="campo-opcional">(vacío: sin mínimo)</span>
+            <label htmlFor="a-costo-domicilio-maximo">
+              Hasta <span className="campo-opcional">(solo si cambia según la distancia: el valor se elige en cada pedido)</span>
             </label>
-            <input id="a-minimo-domicilio" type="text" inputMode="numeric" placeholder="Ej.: 20000" value={minimo} onChange={(e) => setMinimo(e.target.value)} />
+            <input
+              id="a-costo-domicilio-maximo"
+              type="text"
+              inputMode="numeric"
+              placeholder="Ej.: 10000"
+              value={costoMaximo}
+              onChange={(e) => setCostoMaximo(e.target.value)}
+            />
           </div>
         </div>
         <div className="fila-campos">
+          <div className="campo">
+            <label htmlFor="a-minimo-domicilio">
+              Pedido mínimo <span className="campo-opcional">(vacío: sin mínimo; sin contar el domicilio)</span>
+            </label>
+            <input id="a-minimo-domicilio" type="text" inputMode="numeric" placeholder="Ej.: 25000" value={minimo} onChange={(e) => setMinimo(e.target.value)} />
+          </div>
           <div className="campo">
             <label htmlFor="a-zona-domicilio">
               Hasta dónde llevan <span className="campo-opcional">(lo ve el cliente)</span>
@@ -140,11 +156,13 @@ export function AjustesNegocio({ inicial }: { inicial: Datos }) {
               id="a-zona-domicilio"
               type="text"
               maxLength={160}
-              placeholder="Ej.: casco urbano"
+              placeholder="Ej.: hasta 2 km del local"
               value={datos.zonaDomicilio}
               onChange={(e) => fijar({ zonaDomicilio: e.target.value })}
             />
           </div>
+        </div>
+        <div className="fila-campos">
           <div className="campo">
             <label htmlFor="a-telefono-negocio">
               Celular o WhatsApp del restaurante <span className="campo-opcional">(para dudas del cliente)</span>

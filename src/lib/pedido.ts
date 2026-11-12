@@ -1,4 +1,5 @@
 // Tipos y reglas de los pedidos que comparten el panel, la página de la mesa y el servidor.
+import { pesos } from "./formato";
 
 export type EstadoPedido = "NUEVO" | "PREPARANDO" | "LISTO" | "ENTREGADO" | "CANCELADO";
 
@@ -116,6 +117,37 @@ export function normalizarTelefono(texto: string): string | null {
 /** ¿El método de pago es en efectivo? (entonces se pregunta con cuánto paga, para llevar el cambio). */
 export function esEfectivo(metodo: string): boolean {
   return /efectivo/i.test(metodo);
+}
+
+/**
+ * Cómo se cobra el domicilio según Ajustes: un valor fijo, un rango según la distancia (el panel
+ * fija el valor de cada pedido dentro del rango) o por confirmar con el cliente.
+ */
+export type CobroDomicilio = { tipo: "fijo"; valor: number } | { tipo: "rango"; desde: number; hasta: number } | { tipo: "confirmar" };
+
+export function cobroDomicilio(costo: number | null, maximo: number | null): CobroDomicilio {
+  if (costo === null) return { tipo: "confirmar" };
+  if (maximo === null || maximo <= costo) return { tipo: "fijo", valor: costo };
+  return { tipo: "rango", desde: costo, hasta: maximo };
+}
+
+/** «$4.000», «gratis», «$8.000 a $10.000» o «por confirmar». */
+export function textoCobroDomicilio(cobro: CobroDomicilio): string {
+  if (cobro.tipo === "fijo") return cobro.valor === 0 ? "gratis" : pesos(cobro.valor);
+  if (cobro.tipo === "rango") return `${pesos(cobro.desde)} a ${pesos(cobro.hasta)}`;
+  return "por confirmar";
+}
+
+/** Lo más que puede costar el domicilio (para saber si el efectivo alcanza). */
+export function envioMaximo(cobro: CobroDomicilio): number {
+  return cobro.tipo === "fijo" ? cobro.valor : cobro.tipo === "rango" ? cobro.hasta : 0;
+}
+
+/** Valores para elegir con un toque en el panel: los extremos del rango y el punto medio redondo. */
+export function valoresSugeridos(cobro: CobroDomicilio): number[] {
+  if (cobro.tipo !== "rango") return [];
+  const medio = Math.round((cobro.desde + cobro.hasta) / 2 / 1000) * 1000;
+  return [...new Set([cobro.desde, medio, cobro.hasta])].filter((v) => v >= cobro.desde && v <= cobro.hasta);
 }
 
 export const MAX_CANTIDAD = 20;
